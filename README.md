@@ -20,7 +20,7 @@ Obs.: Nao tente fazer isso no windows, é muita dor de cabeça. Pelo linux é si
 2 - Na mesma pasta do main.cpp será gerado um exec com titulo ueize. clique duas vezes e voala.
 ```
 
-# CASO SEJA UM DEV
+# (PRA DEV) CASO QUEIRA DEBUGAR
 recomendo usar o VSCODE com as seguintes configs:
 
 Plugins para baixar:
