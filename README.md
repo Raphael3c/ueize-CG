@@ -1,35 +1,35 @@
-O que precisa? Ter uma maquina com OpenGL instalado e a lib GLFW
+# O que precisa? Ter uma maquina com OpenGL instalado e a lib GLFW
 
-Maneira mais facil para quem está do zero:
+# Maneira mais facil para quem está do zero:
 
-Obs.: Nao tente fazer isso no windows, é muita dor de cabeça. 
+Obs.: Nao tente fazer isso no windows, é muita dor de cabeça. Pelo linux é simplesmente mais facil. Ou utilize o WSL 2.
 
-Pelo linux é simplesmente mais facil. Ou utilize o WSL 2.
-
-## NUNCA UTILIZE A GLUT ## MOTIVO:
-    A lib é muito antiga, geralmente é usada para testes e nao permite algumas funcionalidades cruciais para um jogo 3D como PRENDER O MOUSE DENTRO DA JANELA.
-
+```
 1 - instala o ubuntu LTS ( ou qualquer SO linux )
 3 - Abre o terminal, sudo su
 4 - Instalar o GLFW: apt-get install libglfw3-dev
 5 - Instalar a opengl: apt-get install freeglut3-dev
+```
 
-Pra rodar:
+# Pra rodar:
 (caso nao tenha o g++ rodar (em super usuario): apt install g++)
-
+```
 1 - Compila: 
     g++ -o ueize ./main.cpp -lglut -lGLU -lGL -lm -lglfw
     
 2 - Na mesma pasta do main.cpp será gerado um exec com titulo ueize. clique duas vezes e voala.
+```
 
-****** CASO SEJA UM DEV,*****
+# CASO SEJA UM DEV
 recomendo usar o VSCODE com as seguintes configs:
 
 Plugins para baixar:
+```
 ms-vscode.cpptools
 ms-vscode.cpptools-extension-pack
 ms-vscode.cpptools-themes
-
+```
+```
 1 - Abra o arquivo main.cpp, aperte F5.
 2 - Selecione um dos COMPILADORES que o VSCode vai te mostrar
 3 - Ao escolher, será gerado na raiz do seu projeto uma pasta .vscode e sua execucao tera FALHADO
@@ -70,6 +70,7 @@ ms-vscode.cpptools-themes
 }
 
 5 - Aperta F5 denovo, e pronto.
+```
 
-Lembretes:
-F9 para setar os breakpoints e apenas isso. 
+# Lembretes:
+F9 para setar os breakpoints e é isso. 
