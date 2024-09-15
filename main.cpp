@@ -69,119 +69,117 @@ void processInput(GLFWwindow* window) {
         cameraY -= cameraSpeed;
 }
 
-// Função para desenhar as paredes e o chão
-void drawStreets() {
-    // Cor verde para as paredes (ruas)
-    glColor3f(0.0f, 1.0f, 0.0f);
+void createStreet(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight) {
+    // Desenhar a rua na origem (cor cinza escuro)
+    glColor3f(0.3f, 0.3f, 0.3f);
+    glBegin(GL_QUADS);
+        // Vértices da rua (centrada na origem)
+        glVertex3f(-length / 2, 0.0f, -width / 2);  // Vértice 1: canto inferior esquerdo
+        glVertex3f(length / 2, 0.0f, -width / 2);   // Vértice 2: canto inferior direito
+        glVertex3f(length / 2, 0.0f, width / 2);    // Vértice 3: canto superior direito
+        glVertex3f(-length / 2, 0.0f, width / 2);   // Vértice 4: canto superior esquerdo
+    glEnd();
 
+    // Desenhar o muro da esquerda (se `drawLeftWall` for verdadeiro)
+    if (drawLeftWall) {
+        glColor3f(0.6f, 0.6f, 0.6f);  // Cor cinza claro para o muro
+        float leftWallLength = length * leftWallLengthFactor; // Comprimento do muro da esquerda
+        glBegin(GL_QUADS);
+            // Muro da esquerda
+            glVertex3f(-length / 2, 0.0f, -width / 2);         // Canto inferior esquerdo da rua
+            glVertex3f(-length / 2 + leftWallLength, 0.0f, -width / 2);   // Canto inferior direito do muro
+            glVertex3f(-length / 2 + leftWallLength, wallHeight, -width / 2); // Canto superior direito do muro
+            glVertex3f(-length / 2, wallHeight, -width / 2);   // Canto superior esquerdo do muro
+        glEnd();
+    }
+
+    // Desenhar o muro da direita (se `drawRightWall` for verdadeiro)
+    if (drawRightWall) {
+        glColor3f(0.6f, 0.6f, 0.6f);  // Cor cinza claro para o muro
+        float rightWallLength = length * rightWallLengthFactor; // Comprimento do muro da direita
+        glBegin(GL_QUADS);
+            // Muro da direita
+            glVertex3f(-length / 2, 0.0f, width / 2);          // Canto inferior esquerdo da rua
+            glVertex3f(-length / 2 + rightWallLength, 0.0f, width / 2);           // Canto inferior direito do muro
+            glVertex3f(-length / 2 + rightWallLength, wallHeight, width / 2);      // Canto superior direito do muro
+            glVertex3f(-length / 2, wallHeight, width / 2);     // Canto superior esquerdo do muro
+        glEnd();
+    }
+}
+
+void drawStreets() {
     // Variáveis para controlar a largura e o comprimento das ruas
     float streetLength = 200.0f;  // Comprimento das ruas
     float streetWidth = 30.0f;    // Largura da rua
-    float streetHeight = 6.0f;    // Altura das ruas (equivalente às "paredes")
-    float gapBetweenStreets = 5.0f; // Gap entre ruas paralelas
+    float streetHeight = 6.0f;    // Altura das ruas (equivalente aos muros)
+    float gapBetweenStreets = 20.0f; // Gap entre ruas paralelas
+    int numStreets = 4;  // Número de ruas
 
-    // Largura total das ruas paralelas (incluindo o gap entre elas)
-    float totalParallelWidth = (streetWidth * 3) + (gapBetweenStreets * 2);
+    float xOffset = (streetWidth + gapBetweenStreets);
+    
+    glm::mat4 model = glm::mat4(1.0f); 
 
-    // Desenhar ruas paralelas
-    for (int i = -1; i <= 3; i++) {  // 5 ruas no total: -1, 0, 1 (paralelas)
-        float offsetX = i * (streetWidth + gapBetweenStreets);  // Offset entre as ruas
-        float divideFactor = 2;
+    //RUas principais
 
-        float xPositionNegative = offsetX - streetWidth / 2;
-        float xPositionPositive = offsetX + streetWidth / 2;
+    glPushMatrix();
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, (streetWidth/2) + (streetLength/2)));
+        glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
+        createStreet(streetLength*2, streetWidth, false, true, 1.0f, 1.0f, streetHeight);
+        model = glm::mat4(1.0f);    
+    glPopMatrix();
 
-        if(i == 2){
-            divideFactor = 3;
-        }else if(i == 3){
-            divideFactor = 4;
-        }
+    glPushMatrix();
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, -((streetWidth/2) + (streetLength/2))));
+        glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
+        createStreet(streetLength*2, streetWidth, true, false, 1.0f, 1.0f, streetHeight);
+        model = glm::mat4(1.0f); 
+    glPopMatrix();
+    
+    //______________________________
 
-        float zPositionNegative = -(streetLength / divideFactor);
-        float zPositionPositive = (streetLength / 2);
+    glPushMatrix();
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, -xOffset*1)); // Transladar a rua ao longo do eixo X
+        glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
+        createStreet(streetLength, streetWidth, true, true, 1.0f, 1.0f, streetHeight);
+        model = glm::mat4(1.0f); 
+    glPopMatrix();
 
-        glBegin(GL_QUADS);
-            // Desenhar cada rua (paralela)
-            glVertex3f(xPositionNegative, 0.0f, zPositionNegative);
-            glVertex3f(xPositionNegative, streetHeight, zPositionNegative);
-            glVertex3f(xPositionNegative, streetHeight, zPositionPositive);
-            glVertex3f(xPositionNegative, 0.0f, zPositionPositive);
+    glPushMatrix();
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // Transladar a rua ao longo do eixo X
+        glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
+        createStreet(streetLength, streetWidth, true, true, 1.0f, 1.0f, streetHeight);
+        model = glm::mat4(1.0f); 
+    glPopMatrix();
 
-            if(i == 1){
-                glVertex3f(xPositionPositive, 0.0f, -(streetLength / 3));
-                glVertex3f(xPositionPositive, streetHeight, -(streetLength / 3));
-                glVertex3f(xPositionPositive, streetHeight, zPositionPositive);
-                glVertex3f(xPositionPositive, 0.0f, zPositionPositive);
-            }else {
-                glVertex3f(xPositionPositive, 0.0f, zPositionNegative);
-                glVertex3f(xPositionPositive, streetHeight, zPositionNegative);
-                glVertex3f(xPositionPositive, streetHeight, zPositionPositive);
-                glVertex3f(xPositionPositive, 0.0f, zPositionPositive);
-            }
-        glEnd();
-    }
+    //Ruas da base de piramide
+    glPushMatrix();
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, xOffset*1)); // Transladar a rua ao longo do eixo X
+        glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
+        createStreet(streetLength, streetWidth, true, true, 1.0f, 0.685f, streetHeight);
+        model = glm::mat4(1.0f);
+    glPopMatrix();
 
-    // Cor cinza para o chão
-    glColor3f(0.5f, 0.5f, 0.5f);
-    for (int i = -1; i <= 3; i++) {
-        float offsetX = i * (streetWidth + gapBetweenStreets);  // Offset entre as ruas
-        float divideFactor = 2;
+    glPushMatrix();
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 shearMatrix = glm::mat4(1.0f);
+        shearMatrix[0][2] = 0.2f;  // A quantidade de cisalhamento (ajuste conforme necessário)
+        model = model * shearMatrix;
+        model = glm::translate(model, glm::vec3(((-streetLength/2) - (gapBetweenStreets + (streetWidth/2) + streetWidth)), 0.0f, (xOffset*1 + 15.0f))); // Transladar a rua ao longo do eixo X
+        glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
+        createStreet(streetLength, streetWidth, false, true, 1.0f, 1.0f, streetHeight);
+        model = glm::mat4(1.0f);
+    glPopMatrix();
 
-        if(i == 2){
-            divideFactor = 3;
-        }else if(i == 3){
-            divideFactor = 4;
-        }
+    glPushMatrix();
+        model = glm::translate(model, glm::vec3(-streetLength*0.1625, 0.0f, xOffset*2)); // Transladar a rua ao longo do eixo X
+        glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
+        createStreet(streetLength*0.675, streetWidth, true, true, 0.985f, 0.941f, streetHeight);
+        model = glm::mat4(1.0f);
+    glPopMatrix();
+    //Ruas da base de piramide
 
-        float zPositionNegative = -(streetLength / divideFactor);
-        float zPositionPositive = (streetLength / 2);
-
-        glBegin(GL_QUADS);
-            // Desenhar o chão da rua
-            glVertex3f(offsetX - streetWidth / 2, 0.0f, zPositionNegative);
-            glVertex3f(offsetX + streetWidth / 2, 0.0f, zPositionNegative);
-            glVertex3f(offsetX + streetWidth / 2, 0.0f, zPositionPositive);
-            glVertex3f(offsetX - streetWidth / 2, 0.0f, zPositionPositive);
-        glEnd();
-    }
-
-    // Desenhar ruas conectando as paralelas nas extremidades (frente e trás)
-    glColor3f(1.0f, 0.5f, 1.0f); // Cor para as ruas de conexão
-    glBegin(GL_QUADS);
-        // Conexão na frente (parte frontal) com largura total das ruas paralelas
-        glVertex3f(-totalParallelWidth / 2, 0.0f, (streetLength / 2) + streetWidth); // Vértice 1
-        glVertex3f(-totalParallelWidth / 2, streetHeight, (streetLength / 2) + streetWidth); // Vértice 2
-        glVertex3f(totalParallelWidth / 2, streetHeight, (streetLength / 2) + streetWidth); // Vértice 3
-        glVertex3f(totalParallelWidth / 2, 0.0f, (streetLength / 2) + streetWidth); // Vértice 4
-
-        // Conexão atrás (parte traseira) com largura total das ruas paralelas
-        glVertex3f(-totalParallelWidth / 2, 0.0f, -(streetLength / 2) - streetWidth); // Vértice 5
-        glVertex3f(-totalParallelWidth / 2, streetHeight, -(streetLength / 2) - streetWidth); // Vértice 6
-        glVertex3f(totalParallelWidth / 2, streetHeight, -(streetLength / 2) - streetWidth); // Vértice 7
-        glVertex3f(totalParallelWidth / 2, 0.0f, -(streetLength / 2) - streetWidth); // Vértice 8
-    glEnd();
-
-    // Desenhar o chão das conexões (frente e trás)
-    glColor3f(0.5f, 0.5f, 0.5f);
-    glBegin(GL_QUADS);
-        // Chão da conexão da frente
-        glVertex3f(-totalParallelWidth / 2, 0.0f, streetLength / 2);
-        glVertex3f(totalParallelWidth / 2, 0.0f, streetLength / 2);
-        glVertex3f(totalParallelWidth / 2, 0.0f, streetLength / 2 + streetWidth);
-        glVertex3f(-totalParallelWidth / 2, 0.0f, streetLength / 2 + streetWidth);
-
-        // Chão da conexão de trás
-        glVertex3f(-totalParallelWidth / 2, 0.0f, -streetLength / 2);
-        glVertex3f(totalParallelWidth / 2, 0.0f, -streetLength / 2);
-        glVertex3f(totalParallelWidth / 2, 0.0f, -streetLength / 2 - streetWidth);
-        glVertex3f(-totalParallelWidth / 2, 0.0f, -streetLength / 2 - streetWidth);
-    glEnd();
-
-    // glColor3f(1.0f, 0.2f, 0.2f);
-    // glPointSize(10.0f); // Definir tamanho do ponto
-    // glBegin(GL_POINTS);
-    //     glVertex3f(totalParallelWidth / 2, 0.0f, streetLength / 2);
-    // glEnd();
 }
 
 void drawInfiniteLines(){
@@ -224,18 +222,23 @@ void initSmoothRendering() {
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 }
 
-
 int main(void) {
     // Inicializar o GLFW
     if (!glfwInit())
         return -1;
 
-    // Criar uma janela GLFW
-    GLFWwindow* window = glfwCreateWindow(1024, 768, "3D Scene", NULL, NULL);
+    // Desabilitar o modo fullscreen, configurando o monitor para NULL
+    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);  // Deixe a janela redimensionável, caso necessário
+
+    // Criar uma janela GLFW com uma resolução específica (não fullscreen)
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Street Model with GLM", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return -1;
     }
+
+    // Ajustar o posicionamento da janela para garantir que ela não abra maximizada ou em modo tela cheia
+    glfwSetWindowPos(window, 100, 100);  // Posiciona a janela no canto superior esquerdo (ajuste conforme desejar)
 
     glfwMakeContextCurrent(window);
     glfwSetCursorPosCallback(window, mouseCallback); // Registrar o callback do mouse
@@ -250,10 +253,17 @@ int main(void) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);  // Habilitar profundidade
 
-        // Definir a projeção em perspectiva
+        // Obter a largura e a altura da janela
+        int windowWidth, windowHeight;
+        glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
+
+        // Definir a proporção da janela
+        float aspectRatio = (float)windowWidth / (float)windowHeight;
+
+        // Definir a projeção em perspectiva ajustada ao tamanho da tela
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        gluPerspective(45.0, 1024.0 / 768.0, 0.1, 600.0);
+        gluPerspective(45.0, aspectRatio, 0.1, 600.0);
 
         // Configurar a câmera (visão)
         glMatrixMode(GL_MODELVIEW);
@@ -266,10 +276,9 @@ int main(void) {
 
         gluLookAt(cameraX, cameraY, cameraZ, cameraX + frontX, cameraY + frontY, cameraZ + frontZ, 0.0f, 1.0f, 0.0f);
 
-        // Desenhar as paredes e o chão
-        drawInfiniteLines();
+        // Desenhar as ruas
         drawStreets();
-
+        drawInfiniteLines();
         // Trocar os buffers e processar eventos
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -281,3 +290,4 @@ int main(void) {
     glfwTerminate();
     return 0;
 }
+
