@@ -8,6 +8,16 @@
 #include <GL/glu.h>
 #include <GL/gl.h>
 
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <iomanip> 
+
+struct StreetPoints {
+    std::unordered_map<float, glm::vec3> points;
+};
+
+std::unordered_map<int, StreetPoints> worldCoordinates;
 
 // Variáveis globais para a posição e orientação da câmera
 float cameraX = 0.0f, cameraY = 0.0f, cameraZ = 3.0f;  // Posição inicial da câmera
@@ -18,9 +28,36 @@ float lastX = 320.0f, lastY = 240.0f;
 bool firstMouse = true;
 bool cameraLocked = false;
 
+bool printOnlyOne = true;
 // Variáveis de posição do mouse
 double mouseX = 0.0;
 double mouseY = 0.0;
+
+// Função que calcula as coordenadas no mundo de cada ponto da rua
+void calculateWorldCoordinates(int streetIndex, glm::mat4 transformMatrix, float length) {
+    float step = length / 4;  // Divisão em 4 partes
+
+    // Posições locais dos pontos (antes das transformações)
+    std::vector<glm::vec3> localPoints = {
+        glm::vec3(-length / 2, 0.2f, 0.0f),        // 0%
+        glm::vec3(-length / 2 + step, 0.2f, 0.0f), // 25%
+        glm::vec3(-length / 2 + step * 2, 0.2f, 0.0f), // 50%
+        glm::vec3(-length / 2 + step * 3, 0.2f, 0.0f), // 75%
+        glm::vec3(-length / 2 + step * 4, 0.2f, 0.0f)  // 100%
+    };
+
+    // Aplicar a matriz de transformação para calcular as coordenadas de mundo
+    StreetPoints streetPoints;
+    std::vector<float> stepPercentages = {0, 25, 50, 75, 100};
+
+    for (int i = 0; i < localPoints.size(); ++i) {
+        glm::vec4 transformedPoint = transformMatrix * glm::vec4(localPoints[i], 1.0f);
+        streetPoints.points[stepPercentages[i]] = glm::vec3(transformedPoint);
+    }
+
+    // Armazenar as coordenadas de mundo para esta rua
+    worldCoordinates[streetIndex] = streetPoints;
+}
 
 // Função de callback para capturar o movimento do mouse
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
@@ -105,6 +142,58 @@ void createStreet(float length, float width, bool drawLeftWall, bool drawRightWa
             glVertex3f(-length / 2, wallHeight, width / 2);     // Canto superior esquerdo do muro
         glEnd();
     }
+
+    // Desenhar uma linha no meio da rua
+    glColor3f(1.0f, 1.0f, 1.0f);  // Cor branca para a linha
+    glBegin(GL_LINES);
+        glVertex3f(-length / 2, 0.1f, 0.0f);  // Ponto inicial da linha no centro da rua
+        glVertex3f(length / 2, 0.1f, 0.0f);   // Ponto final da linha no centro da rua
+    glEnd();
+
+    // Desenhar os pontos ao longo da linha
+    float step = length / 4;  // Divisão em 4 partes
+    float pointHeight = 0.2f;  // Altura dos pontos (levemente acima da linha)
+
+    // Desenhar os 4 pontos ao longo da linha
+    glPointSize(10.0f);  // Tamanho dos pontos
+
+    // Ponto 0% (início)
+    glColor3f(1.0f, 0.0f, 0.0f);  // Cor vermelha
+    glBegin(GL_POINTS);
+        glVertex3f(-length / 2, pointHeight, 0.0f);
+    glEnd();
+
+    // Ponto 25%
+    glColor3f(0.0f, 1.0f, 0.0f);  // Cor verde
+    glBegin(GL_POINTS);
+        glVertex3f(-length / 2 + step, pointHeight, 0.0f);
+    glEnd();
+
+    // Ponto 50%
+    glColor3f(0.0f, 0.0f, 1.0f);  // Cor azul
+    glBegin(GL_POINTS);
+        glVertex3f(-length / 2 + step * 2, pointHeight, 0.0f);
+    glEnd();
+
+    // Ponto 75%
+    glColor3f(1.0f, 1.0f, 0.0f);  // Cor amarela
+    glBegin(GL_POINTS);
+        glVertex3f(-length / 2 + step * 3, pointHeight, 0.0f);
+    glEnd();
+
+    // Ponto 100%
+    glColor3f(1.0f, 0.0f, 1.0f);  // Cor amarela
+    glBegin(GL_POINTS);
+        glVertex3f(-length / 2 + step * 4, pointHeight, 0.0f);
+    glEnd();
+}
+
+void createStreetWithWorldCoordinates(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, glm::mat4 transformMatrix, int streetIndex) {
+    // Desenhar a rua e calcular suas coordenadas de mundo
+    createStreet(length, width, drawLeftWall, drawRightWall, leftWallLengthFactor, rightWallLengthFactor, wallHeight); 
+
+    // Calcular as coordenadas de mundo dos pontos após as transformações
+    calculateWorldCoordinates(streetIndex, transformMatrix, length);
 }
 
 void drawStreets() {
@@ -118,6 +207,7 @@ void drawStreets() {
     float xOffset = (streetWidth + gapBetweenStreets);
     
     glm::mat4 model = glm::mat4(1.0f); 
+    int streetIndex = 0;
 
     //RUas principais
 
@@ -125,7 +215,7 @@ void drawStreets() {
         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, (streetWidth/2) + (streetLength/2)));
         glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
-        createStreet(streetLength*2, streetWidth, false, true, 1.0f, 1.0f, streetHeight);
+        createStreetWithWorldCoordinates(streetLength*2, streetWidth, false, true, 1.0f, 1.0f, streetHeight, model, streetIndex++);
         model = glm::mat4(1.0f);    
     glPopMatrix();
 
@@ -133,7 +223,7 @@ void drawStreets() {
         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, -((streetWidth/2) + (streetLength/2))));
         glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
-        createStreet(streetLength*2, streetWidth, true, false, 1.0f, 1.0f, streetHeight);
+        createStreetWithWorldCoordinates(streetLength*2, streetWidth, true, false, 1.0f, 1.0f, streetHeight, model, streetIndex++);
         model = glm::mat4(1.0f); 
     glPopMatrix();
     
@@ -142,14 +232,14 @@ void drawStreets() {
     glPushMatrix();
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, -xOffset*1)); // Transladar a rua ao longo do eixo X
         glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
-        createStreet(streetLength, streetWidth, true, true, 1.0f, 1.0f, streetHeight);
+        createStreetWithWorldCoordinates(streetLength, streetWidth, true, true, 1.0f, 1.0f, streetHeight, model, streetIndex++);
         model = glm::mat4(1.0f); 
     glPopMatrix();
 
     glPushMatrix();
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // Transladar a rua ao longo do eixo X
         glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
-        createStreet(streetLength, streetWidth, true, true, 1.0f, 1.0f, streetHeight);
+        createStreetWithWorldCoordinates(streetLength, streetWidth, true, true, 1.0f, 1.0f, streetHeight, model, streetIndex++);
         model = glm::mat4(1.0f); 
     glPopMatrix();
 
@@ -157,7 +247,7 @@ void drawStreets() {
     glPushMatrix();
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, xOffset*1)); // Transladar a rua ao longo do eixo X
         glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
-        createStreet(streetLength, streetWidth, true, true, 1.0f, 0.685f, streetHeight);
+        createStreetWithWorldCoordinates(streetLength, streetWidth, true, true, 1.0f, 0.685f, streetHeight, model, streetIndex++);
         model = glm::mat4(1.0f);
     glPopMatrix();
 
@@ -168,14 +258,14 @@ void drawStreets() {
         model = model * shearMatrix;
         model = glm::translate(model, glm::vec3(((-streetLength/2) - (gapBetweenStreets + (streetWidth/2) + streetWidth)), 0.0f, (xOffset*1 + 15.0f))); // Transladar a rua ao longo do eixo X
         glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
-        createStreet(streetLength, streetWidth, false, true, 1.0f, 1.0f, streetHeight);
+        createStreetWithWorldCoordinates(streetLength, streetWidth, false, true, 1.0f, 1.0f, streetHeight, model, streetIndex++);
         model = glm::mat4(1.0f);
     glPopMatrix();
 
     glPushMatrix();
         model = glm::translate(model, glm::vec3(-streetLength*0.1625, 0.0f, xOffset*2)); // Transladar a rua ao longo do eixo X
         glMultMatrixf(glm::value_ptr(model));  // Aplicar a matriz de transformação no OpenGL
-        createStreet(streetLength*0.675, streetWidth, true, true, 0.985f, 0.941f, streetHeight);
+        createStreetWithWorldCoordinates(streetLength*0.675, streetWidth, true, true, 0.985f, 0.941f, streetHeight, model, streetIndex++);
         model = glm::mat4(1.0f);
     glPopMatrix();
     //Ruas da base de piramide
@@ -220,6 +310,23 @@ void initSmoothRendering() {
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+}
+
+void printWorldCoordinates() {
+    if(!printOnlyOne) return;
+    
+    for (const auto& street : worldCoordinates) {
+        std::cout << "Street " << street.first << " coordinates:\n";
+        for (const auto& point : street.second.points) {
+            std::cout << std::fixed << std::setprecision(2);  // Configura a saída com 2 casas decimais
+            std::cout << "  " << point.first << "%: (" 
+                      << point.second.x << ", " 
+                      << point.second.y << ", " 
+                      << point.second.z << ")\n";
+        }
+    }
+
+    printOnlyOne = false;
 }
 
 int main(void) {
@@ -279,6 +386,8 @@ int main(void) {
         // Desenhar as ruas
         drawStreets();
         drawInfiniteLines();
+        printWorldCoordinates();
+
         // Trocar os buffers e processar eventos
         glfwSwapBuffers(window);
         glfwPollEvents();
