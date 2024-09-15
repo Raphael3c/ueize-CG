@@ -13,25 +13,114 @@
 #include <unordered_map>
 #include <iomanip> 
 
+// Estrutura para armazenar pontos de uma rua
 struct StreetPoints {
     std::unordered_map<float, glm::vec3> points;
 };
 
+// Armazenamento das coordenadas das ruas
 std::unordered_map<int, StreetPoints> worldCoordinates;
 
-// Variáveis globais para a posição e orientação da câmera
-float cameraX = 0.0f, cameraY = 0.0f, cameraZ = 3.0f;  // Posição inicial da câmera
-float cameraYaw = -90.0f, cameraPitch = 0.0f;           // Direção da câmera
-float cameraSpeed = 0.5f;                              // Velocidade de movimento
+// Variáveis globais para a posição da câmera
+float cameraX = 0.0f, cameraY = 0.0f, cameraZ = 3.0f;
+float cameraYaw = -90.0f, cameraPitch = 0.0f;
+float cameraSpeed = 0.5f;
 float mouseSensitivity = 0.1f;
 float lastX = 320.0f, lastY = 240.0f;
 bool firstMouse = true;
-bool cameraLocked = false;
+bool controlCamera = true;  // Flag para alternar entre controlar a câmera ou o cursor
+bool printOnlyOne = true;  
 
-bool printOnlyOne = true;
-// Variáveis de posição do mouse
+// Variáveis para o cursor personalizado
+float customCursorX = 0.0f, customCursorY = 0.0f;
+
+// Variáveis de posição do mouse e para o clique
+int closestStreetIndex = -1;  // Rua mais próxima do clique
+float closestPointPercentage = -1;  // Ponto mais próximo do clique
 double mouseX = 0.0;
 double mouseY = 0.0;
+bool mousePressed = false;
+
+// Função para alternar entre controle de câmera e cursor
+void toggleCameraControl() {
+    controlCamera = !controlCamera;
+}
+
+// Função para desenhar o cursor personalizado
+void drawCustomCursor() {
+    glColor3f(1.0f, 0.0f, 0.0f);  // Cor vermelha
+    glPointSize(10.0f);
+    glBegin(GL_POINTS);
+        glVertex2f(customCursorX, customCursorY);
+    glEnd();
+}
+
+// Função que converte coordenadas de tela para um raio no mundo
+glm::vec3 screenToWorldRay(int mouseX, int mouseY, int windowWidth, int windowHeight, glm::mat4 projectionMatrix, glm::mat4 viewMatrix) {
+    // Coordenadas normalizadas entre -1 e 1
+    float x = (2.0f * mouseX) / windowWidth - 1.0f;
+    float y = 1.0f - (2.0f * mouseY) / windowHeight; // Coordenadas Y invertidas
+    float z = 1.0f; // Far plane
+
+    glm::vec4 rayClip = glm::vec4(x, y, -1.0f, 1.0f);
+    
+    // Transformar de clip-space para eye-space
+    glm::vec4 rayEye = glm::inverse(projectionMatrix) * rayClip;
+    rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);  // Definir z=-1, w=0 para o vetor direcional
+
+    // Transformar de eye-space para world-space
+    glm::vec3 rayWorld = glm::vec3(glm::inverse(viewMatrix) * rayEye);
+    rayWorld = glm::normalize(rayWorld);
+    
+    return rayWorld;
+}
+
+// Função de callback para o clique do mouse
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        mousePressed = true;
+
+        // Configurar a câmera para ray casting
+        int windowWidth, windowHeight;
+        glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
+
+        glm::mat4 projectionMatrix = glm::perspective(glm::radians(45.0f), (float)windowWidth / (float)windowHeight, 0.1f, 600.0f);
+        glm::mat4 viewMatrix = glm::lookAt(glm::vec3(cameraX, cameraY, cameraZ), 
+                                           glm::vec3(cameraX + cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch)),
+                                                     cameraY + sin(glm::radians(cameraPitch)),
+                                                     cameraZ + sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch))),
+                                           glm::vec3(0.0f, 1.0f, 0.0f));
+
+        glm::vec3 ray = screenToWorldRay((int)mouseX, (int)mouseY, windowWidth, windowHeight, projectionMatrix, viewMatrix);
+
+        // Verificar a interseção com os pontos
+        glm::vec3 cameraPosition = glm::vec3(cameraX, cameraY, cameraZ);
+        float minDistance = FLT_MAX;
+        closestStreetIndex = -1;
+        closestPointPercentage = -1;
+
+        for (const auto& street : worldCoordinates) {
+            for (const auto& point : street.second.points) {
+                glm::vec3 toPoint = point.second - cameraPosition;
+                float t = glm::dot(toPoint, ray);
+                glm::vec3 closestPointOnRay = cameraPosition + ray * t;
+                float distance = glm::length(closestPointOnRay - point.second);
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestStreetIndex = street.first;
+                    closestPointPercentage = point.first;
+                }
+            }
+        }
+
+        // Se um ponto mais próximo foi encontrado, ele será destacado em branco
+        if (closestStreetIndex != -1) {
+            std::cout << "Ponto mais próximo: Rua " << closestStreetIndex 
+                      << ", Posição " << closestPointPercentage << "%\n";
+        }
+    }
+}
 
 // Função que calcula as coordenadas no mundo de cada ponto da rua
 void calculateWorldCoordinates(int streetIndex, glm::mat4 transformMatrix, float length) {
@@ -59,8 +148,22 @@ void calculateWorldCoordinates(int streetIndex, glm::mat4 transformMatrix, float
     worldCoordinates[streetIndex] = streetPoints;
 }
 
-// Função de callback para capturar o movimento do mouse
+// Função de callback para o movimento do mouse
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
+    mouseX = xpos;
+    mouseY = ypos;
+
+    // Se estiver controlando o cursor personalizado
+    if (!controlCamera) {
+        // Normalizar as coordenadas do cursor (entre -1 e 1) na tela
+        int windowWidth, windowHeight;
+        glfwGetWindowSize(window, &windowWidth, &windowHeight);
+        customCursorX = (xpos / windowWidth) * 2.0f - 1.0f;
+        customCursorY = 1.0f - (ypos / windowHeight) * 2.0f;
+        return;
+    }
+
+    // Se estiver controlando a câmera
     if (firstMouse) {
         lastX = xpos;
         lastY = ypos;
@@ -68,7 +171,7 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     }
 
     float xOffset = xpos - lastX;
-    float yOffset = lastY - ypos; // Invertido porque as coordenadas Y da janela vão de cima para baixo
+    float yOffset = lastY - ypos;  // Coordenadas Y invertidas
 
     lastX = xpos;
     lastY = ypos;
@@ -86,35 +189,53 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
         cameraPitch = -89.0f;
 }
 
-// Função para processar a entrada do teclado e mover a câmera
+// Função para processar entrada do teclado e mover a câmera
 void processInput(GLFWwindow* window) {
-    float cameraFrontX = cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
-    float cameraFrontY = sin(glm::radians(cameraPitch));
-    float cameraFrontZ = sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
+        toggleCameraControl();
+        // Alternar o controle do cursor do sistema
+        if (!controlCamera) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);  // Exibir cursor do sistema
+        } else {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  // Desabilitar cursor do sistema
+        }
+    }
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        cameraX += cameraSpeed * cameraFrontX, cameraY += cameraSpeed * cameraFrontY, cameraZ += cameraSpeed * cameraFrontZ;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        cameraX -= cameraSpeed * cameraFrontX, cameraY -= cameraSpeed * cameraFrontY, cameraZ -= cameraSpeed * cameraFrontZ;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        cameraX -= cameraSpeed * sin(glm::radians(cameraYaw)), cameraZ += cameraSpeed * cos(glm::radians(cameraYaw));
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        cameraX += cameraSpeed * sin(glm::radians(cameraYaw)), cameraZ -= cameraSpeed * cos(glm::radians(cameraYaw));
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        cameraY += cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        cameraY -= cameraSpeed;
+    // Controlar a câmera apenas se o controle de câmera estiver ativo
+    if (controlCamera) {
+        glm::vec3 cameraFront;
+        cameraFront.x = cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
+        cameraFront.y = sin(glm::radians(cameraPitch));
+        cameraFront.z = sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
+        cameraFront = glm::normalize(cameraFront);  // Normalizar o vetor para garantir tamanho 1
+
+        glm::vec3 cameraRight = glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f))); // Vetor da direita
+        glm::vec3 cameraUp = glm::normalize(glm::cross(cameraRight, cameraFront)); // Vetor para cima
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            cameraX += cameraSpeed * cameraFront.x, cameraY += cameraSpeed * cameraFront.y, cameraZ += cameraSpeed * cameraFront.z;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            cameraX -= cameraSpeed * cameraFront.x, cameraY -= cameraSpeed * cameraFront.y, cameraZ -= cameraSpeed * cameraFront.z;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            cameraX -= cameraRight.x * cameraSpeed, cameraY -= cameraRight.y * cameraSpeed, cameraZ -= cameraRight.z * cameraSpeed;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            cameraX += cameraRight.x * cameraSpeed, cameraY += cameraRight.y * cameraSpeed, cameraZ += cameraRight.z * cameraSpeed;
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+            cameraY += cameraSpeed;
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+            cameraY -= cameraSpeed;
+    }
 }
 
-void createStreet(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight) {
+// Função que desenha a rua e os pontos, mudando a cor do ponto mais próximo
+void createStreet(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, int streetIndex) {
     // Desenhar a rua na origem (cor cinza escuro)
     glColor3f(0.3f, 0.3f, 0.3f);
     glBegin(GL_QUADS);
-        // Vértices da rua (centrada na origem)
-        glVertex3f(-length / 2, 0.0f, -width / 2);  // Vértice 1: canto inferior esquerdo
-        glVertex3f(length / 2, 0.0f, -width / 2);   // Vértice 2: canto inferior direito
-        glVertex3f(length / 2, 0.0f, width / 2);    // Vértice 3: canto superior direito
-        glVertex3f(-length / 2, 0.0f, width / 2);   // Vértice 4: canto superior esquerdo
+        glVertex3f(-length / 2, 0.0f, -width / 2);  
+        glVertex3f(length / 2, 0.0f, -width / 2);   
+        glVertex3f(length / 2, 0.0f, width / 2);    
+        glVertex3f(-length / 2, 0.0f, width / 2);   
     glEnd();
 
     // Desenhar o muro da esquerda (se `drawLeftWall` for verdadeiro)
@@ -150,47 +271,37 @@ void createStreet(float length, float width, bool drawLeftWall, bool drawRightWa
         glVertex3f(length / 2, 0.1f, 0.0f);   // Ponto final da linha no centro da rua
     glEnd();
 
-    // Desenhar os pontos ao longo da linha
-    float step = length / 4;  // Divisão em 4 partes
-    float pointHeight = 0.2f;  // Altura dos pontos (levemente acima da linha)
+    // Desenhar os pontos
+    float step = length / 4;
+    float pointHeight = 0.2f;
+    glPointSize(10.0f);
 
-    // Desenhar os 4 pontos ao longo da linha
-    glPointSize(10.0f);  // Tamanho dos pontos
+    std::vector<float> steps = {0, 25, 50, 75, 100};
+    for (int i = 0; i < steps.size(); ++i) {
+        float stepPosition = steps[i];
+        // Verifique se o ponto atual é o mais próximo
+        if (closestStreetIndex == streetIndex && closestPointPercentage == stepPosition) {
+            glColor3f(1.0f, 1.0f, 1.0f);  // Branco se for o ponto mais próximo
+        } else {
+            switch (i) {
+                case 0: glColor3f(1.0f, 0.0f, 0.0f); break;  // Vermelho
+                case 1: glColor3f(0.0f, 1.0f, 0.0f); break;  // Verde
+                case 2: glColor3f(0.0f, 0.0f, 1.0f); break;  // Azul
+                case 3: glColor3f(1.0f, 1.0f, 0.0f); break;  // Amarelo
+                case 4: glColor3f(1.0f, 0.0f, 1.0f); break;  // Roxo
+            }
+        }
 
-    // Ponto 0% (início)
-    glColor3f(1.0f, 0.0f, 0.0f);  // Cor vermelha
-    glBegin(GL_POINTS);
-        glVertex3f(-length / 2, pointHeight, 0.0f);
-    glEnd();
-
-    // Ponto 25%
-    glColor3f(0.0f, 1.0f, 0.0f);  // Cor verde
-    glBegin(GL_POINTS);
-        glVertex3f(-length / 2 + step, pointHeight, 0.0f);
-    glEnd();
-
-    // Ponto 50%
-    glColor3f(0.0f, 0.0f, 1.0f);  // Cor azul
-    glBegin(GL_POINTS);
-        glVertex3f(-length / 2 + step * 2, pointHeight, 0.0f);
-    glEnd();
-
-    // Ponto 75%
-    glColor3f(1.0f, 1.0f, 0.0f);  // Cor amarela
-    glBegin(GL_POINTS);
-        glVertex3f(-length / 2 + step * 3, pointHeight, 0.0f);
-    glEnd();
-
-    // Ponto 100%
-    glColor3f(1.0f, 0.0f, 1.0f);  // Cor amarela
-    glBegin(GL_POINTS);
-        glVertex3f(-length / 2 + step * 4, pointHeight, 0.0f);
-    glEnd();
+        glBegin(GL_POINTS);
+            glVertex3f(-length / 2 + step * i, pointHeight, 0.0f);
+        glEnd();
+    }
 }
 
+// Função que desenha a rua com suas coordenadas de mundo
 void createStreetWithWorldCoordinates(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, glm::mat4 transformMatrix, int streetIndex) {
     // Desenhar a rua e calcular suas coordenadas de mundo
-    createStreet(length, width, drawLeftWall, drawRightWall, leftWallLengthFactor, rightWallLengthFactor, wallHeight); 
+    createStreet(length, width, drawLeftWall, drawRightWall, leftWallLengthFactor, rightWallLengthFactor, wallHeight, streetIndex); 
 
     // Calcular as coordenadas de mundo dos pontos após as transformações
     calculateWorldCoordinates(streetIndex, transformMatrix, length);
@@ -269,7 +380,6 @@ void drawStreets() {
         model = glm::mat4(1.0f);
     glPopMatrix();
     //Ruas da base de piramide
-
 }
 
 void drawInfiniteLines(){
@@ -330,41 +440,42 @@ void printWorldCoordinates() {
 }
 
 int main(void) {
-    // Inicializar o GLFW
     if (!glfwInit())
         return -1;
 
     // Desabilitar o modo fullscreen, configurando o monitor para NULL
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);  // Deixe a janela redimensionável, caso necessário
 
-    // Criar uma janela GLFW com uma resolução específica (não fullscreen)
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Street Model with GLM", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "3D Picking with Mouse", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return -1;
     }
-
+    
     // Ajustar o posicionamento da janela para garantir que ela não abra maximizada ou em modo tela cheia
     glfwSetWindowPos(window, 100, 100);  // Posiciona a janela no canto superior esquerdo (ajuste conforme desejar)
 
-    glfwMakeContextCurrent(window);
-    glfwSetCursorPosCallback(window, mouseCallback); // Registrar o callback do mouse
-    initSmoothRendering(); // Habilitar a suavização
 
-    // Desabilitar o cursor e centralizar
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwMakeContextCurrent(window);
+    glfwSetCursorPosCallback(window, mouseCallback);
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);  // Registrar o callback do clique do mouse
+
+    // Inicializar suavização e outras configurações
+    initSmoothRendering();
 
     // Loop principal
     while (!glfwWindowShouldClose(window)) {
-        // Limpar o buffer
+        // Limpar buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);  // Habilitar profundidade
+        glEnable(GL_DEPTH_TEST);
 
-        // Obter a largura e a altura da janela
+       // Desenhar o cursor personalizado
+        if (!controlCamera) {
+            drawCustomCursor();
+        }
+        // Obter as dimensões da janela
         int windowWidth, windowHeight;
         glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
-
-        // Definir a proporção da janela
         float aspectRatio = (float)windowWidth / (float)windowHeight;
 
         // Definir a projeção em perspectiva ajustada ao tamanho da tela
@@ -376,17 +487,21 @@ int main(void) {
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
-        // Direção da câmera
-        float frontX = cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
-        float frontY = sin(glm::radians(cameraPitch));
-        float frontZ = sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
+        glm::vec3 cameraFront;
+        cameraFront.x = cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
+        cameraFront.y = sin(glm::radians(cameraPitch));
+        cameraFront.z = sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
 
-        gluLookAt(cameraX, cameraY, cameraZ, cameraX + frontX, cameraY + frontY, cameraZ + frontZ, 0.0f, 1.0f, 0.0f);
+        glm::vec3 cameraPos(cameraX, cameraY, cameraZ);
+        glm::vec3 cameraTarget = cameraPos + cameraFront;
+        glm::vec3 cameraUp(0.0f, 1.0f, 0.0f);  // Definindo o vetor "up"
 
-        // Desenhar as ruas
-        drawStreets();
-        drawInfiniteLines();
-        printWorldCoordinates();
+        gluLookAt(cameraX, cameraY, cameraZ, cameraTarget.x, cameraTarget.y, cameraTarget.z, cameraUp.x, cameraUp.y, cameraUp.z);
+
+        // Desenhar as ruas e as linhas
+        drawStreets();        // Chamada para desenhar as ruas
+        drawInfiniteLines();  // Chamada para desenhar as linhas de referência
+        printWorldCoordinates(); // Imprime coordenadas de ruas apenas uma vez
 
         // Trocar os buffers e processar eventos
         glfwSwapBuffers(window);
@@ -399,4 +514,3 @@ int main(void) {
     glfwTerminate();
     return 0;
 }
-
