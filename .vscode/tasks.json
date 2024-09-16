@@ -2,22 +2,27 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: g++ arquivo de build ativo",
+            "label": "C/C++: g++ compilar com arquivos especificados",
             "command": "/usr/bin/g++",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                "${file}",
+                "${workspaceFolder}/main.cpp",  
+                "${workspaceFolder}/drawsModule/drawInfiniteLines/main.cpp",  
+                "${workspaceFolder}/drawsModule/drawStreets/main.cpp",  
+                "${workspaceFolder}/objectsModule/createStreet/main.cpp",  
+                "${workspaceFolder}/utils/calculateWorldCoordinates/main.cpp", 
                 "-o",
-                "${fileDirname}/ueize",
+                "${workspaceFolder}/ueize",
                 "-lglut",
                 "-lGLU",
                 "-lGL",
                 "-lm",
                 "-lglfw",
+                "-lGLEW"
             ],
             "options": {
-                "cwd": "${fileDirname}"
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$gcc"
