@@ -40,6 +40,13 @@ double mouseX = 0.0;
 double mouseY = 0.0;
 bool mousePressed = false;
 
+// Vetor para armazenar os dois últimos pontos
+std::vector<SelectedPoint> selectedPoints(2, {0, 0.0f});
+int pointCount = 0;  // Contador de pontos para alternar entre os dois slots
+
+// Armazenar as coordenadas da linha traçada
+std::vector<glm::vec3> lineCoordinates;
+
 // Função que converte coordenadas de tela para um raio no mundo
 glm::vec3 screenToWorldRay(int mouseX, int mouseY, int windowWidth, int windowHeight, glm::mat4 projectionMatrix, glm::mat4 viewMatrix) {
     // Coordenadas normalizadas entre -1 e 1
@@ -59,6 +66,56 @@ glm::vec3 screenToWorldRay(int mouseX, int mouseY, int windowWidth, int windowHe
     
     return rayWorld;
 }
+
+
+// Função para traçar a linha entre os dois pontos selecionados
+void drawLineBetweenSelectedPoints() {
+    lineCoordinates.clear(); // Limpar a linha anterior, se houver
+
+    // Verificar se temos dois pontos selecionados
+    if (selectedPoints.size() < 2) {
+        return;  // Não há pontos suficientes para traçar a linha
+    }
+
+    const SelectedPoint& point1 = selectedPoints[0];
+    const SelectedPoint& point2 = selectedPoints[1];
+
+    // Verificar se os pontos estão na mesma rua
+    if (point1.streetIndex == point2.streetIndex) {
+        // Pegar as coordenadas dos pontos no worldCoordinates
+        const auto& streetPoints = worldCoordinates[point1.streetIndex].points;
+
+        // Garantir que point1 esteja antes de point2 (para percorrer a rua de forma correta)
+        float startPercentage = std::min(point1.pointPercentage, point2.pointPercentage);
+        float endPercentage = std::max(point1.pointPercentage, point2.pointPercentage);
+
+        // Percorrer os pontos da rua e armazenar no lineCoordinates
+        for (const auto& point : streetPoints) {
+            if (point.first >= startPercentage && point.first <= endPercentage) {
+                lineCoordinates.push_back(point.second);
+            }
+        }
+
+    } else {
+        // Caso os pontos estejam em ruas diferentes, por enquanto, não fazemos nada.
+        // No futuro, poderia ser adicionado um algoritmo de caminho entre ruas.
+        std::cout << "Os pontos estão em ruas diferentes. Não é possível traçar uma linha entre eles por enquanto.\n";
+    }
+}
+
+// #TODO Remover daqui
+// Função para desenhar a linha
+void drawLine() {
+    if (lineCoordinates.empty()) return;  // Não há linha para desenhar
+
+    glColor3f(1.0f, 0.0f, 1.0f);  // Definir a cor da linha para branco
+    glBegin(GL_LINE_STRIP);
+    for (const auto& point : lineCoordinates) {
+        glVertex3f(point.x, point.y, point.z);  // Definir os vértices da linha
+    }
+    glEnd();
+}
+
 
 // Função de callback para o clique do mouse
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
@@ -87,6 +144,7 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
         closestStreetIndex = -1;
         closestPointPercentage = -1;
 
+        // Encontrar o ponto mais próximo da rua
         for (const auto& street : worldCoordinates) {
             for (const auto& point : street.second.points) {
                 glm::vec3 toPoint = point.second - cameraPosition;
@@ -104,10 +162,28 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
 
         if (closestStreetIndex != -1) {
             std::cout << "Ponto mais próximo: Rua " << closestStreetIndex 
-                    << ", Posição " << closestPointPercentage << "%\n";
+                      << ", Posição " << closestPointPercentage << "%\n";
+
+            // Adicionar o ponto selecionado
+            selectedPoints[pointCount % 2] = {closestStreetIndex, closestPointPercentage};
+            pointCount++;
+
+            // Traçar a linha entre os dois pontos, se houver dois pontos selecionados
+            if (pointCount >= 2) {
+                drawLineBetweenSelectedPoints();
+            }
+
+            std::cout << "Pontos selecionados:\n";
+            for (int i = 0; i < 2; ++i) {
+                if (i < pointCount) {
+                    std::cout << "  Ponto " << i+1 << ": Rua " << selectedPoints[i].streetIndex 
+                              << ", Posição " << selectedPoints[i].pointPercentage << "%\n";
+                }
+            }
         }
     }
 }
+
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     mouseX = xpos;
@@ -273,9 +349,12 @@ int main(void) {
         gluLookAt(cameraX, cameraY, cameraZ, cameraTarget.x, cameraTarget.y, cameraTarget.z, cameraUp.x, cameraUp.y, cameraUp.z);
 
         // Desenhar as ruas e as linhas
-        drawStreets(worldCoordinates, closestStreetIndex, closestPointPercentage);        // Chamada para desenhar as ruas
+        drawStreets(worldCoordinates, closestStreetIndex, closestPointPercentage, selectedPoints);        // Chamada para desenhar as ruas
         drawInfiniteLines();  // Chamada para desenhar as linhas de referência
         printWorldCoordinates(); // Imprime coordenadas de ruas apenas uma vez
+        
+        // #Todo: vai ser chamado de drawRoute
+        drawLine();  // Desenhar a linha entre os pontos selecionados
 
         // Trocar os buffers e processar eventos
         glfwSwapBuffers(window);

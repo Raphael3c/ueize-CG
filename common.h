@@ -8,4 +8,9 @@ struct StreetPoints {
     std::unordered_map<float, glm::vec3> points;
 };
 
+struct SelectedPoint {
+    int streetIndex;
+    float pointPercentage;
+};
+
 #endif // COMMON_H
