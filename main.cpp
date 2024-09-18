@@ -17,6 +17,11 @@
 #include "drawsModule/drawInfiniteLines/main.h"
 #include "drawsModule/drawStreets/main.h"
 
+#include <queue>
+#include <unordered_map>
+#include <vector>
+#include <algorithm> 
+
 // Armazenamento das coordenadas das ruas
 std::unordered_map<int, StreetPoints> worldCoordinates;
 
@@ -67,39 +72,133 @@ glm::vec3 screenToWorldRay(int mouseX, int mouseY, int windowWidth, int windowHe
     return rayWorld;
 }
 
+// Estrutura para armazenar as conexões entre ruas (um grafo simples)
+std::unordered_map<int, std::vector<int>> streetConnections;
 
-// Função para traçar a linha entre os dois pontos selecionados
-void drawLineBetweenSelectedPoints() {
-    lineCoordinates.clear(); // Limpar a linha anterior, se houver
+void initializeStreetConnections() {
+    streetConnections[0] = {2,3,4};  // Rua 0 está conectada à rua 1
+    streetConnections[1] = {2,3,4,6};  // Rua 1 está conectada à rua 0 e 2
+    streetConnections[2] = {0,1};  // Rua 2 está conectada à rua 1
+    streetConnections[3] = {0,1};  // Rua 2 está conectada à rua 1
+    streetConnections[4] = {0,1,5};  // Rua 2 está conectada à rua 1
+    streetConnections[5] = {4,6};  // Rua 2 está conectada à rua 1
+    streetConnections[6] = {1,6};  // Rua 2 está conectada à rua 1
+}
 
-    // Verificar se temos dois pontos selecionados
-    if (selectedPoints.size() < 2) {
-        return;  // Não há pontos suficientes para traçar a linha
-    }
+// Função para encontrar o caminho entre ruas usando BFS
+std::vector<int> findPathBetweenStreets(int startStreet, int endStreet) {
+    std::unordered_map<int, int> previous;  // Para armazenar o caminho
+    std::queue<int> queue;
+    std::unordered_map<int, bool> visited;
 
-    const SelectedPoint& point1 = selectedPoints[0];
-    const SelectedPoint& point2 = selectedPoints[1];
+    queue.push(startStreet);
+    visited[startStreet] = true;
 
-    // Verificar se os pontos estão na mesma rua
-    if (point1.streetIndex == point2.streetIndex) {
-        // Pegar as coordenadas dos pontos no worldCoordinates
-        const auto& streetPoints = worldCoordinates[point1.streetIndex].points;
+    while (!queue.empty()) {
+        int currentStreet = queue.front();
+        queue.pop();
 
-        // Garantir que point1 esteja antes de point2 (para percorrer a rua de forma correta)
-        float startPercentage = std::min(point1.pointPercentage, point2.pointPercentage);
-        float endPercentage = std::max(point1.pointPercentage, point2.pointPercentage);
-
-        // Percorrer os pontos da rua e armazenar no lineCoordinates
-        for (const auto& point : streetPoints) {
-            if (point.first >= startPercentage && point.first <= endPercentage) {
-                lineCoordinates.push_back(point.second);
+        // Se encontramos a rua de destino
+        if (currentStreet == endStreet) {
+            std::vector<int> path;
+            for (int at = endStreet; at != startStreet; at = previous[at]) {
+                path.push_back(at);
             }
+            path.push_back(startStreet);
+            std::reverse(path.begin(), path.end());
+            return path;
         }
 
-    } else {
-        // Caso os pontos estejam em ruas diferentes, por enquanto, não fazemos nada.
-        // No futuro, poderia ser adicionado um algoritmo de caminho entre ruas.
-        std::cout << "Os pontos estão em ruas diferentes. Não é possível traçar uma linha entre eles por enquanto.\n";
+        // Visitar ruas conectadas
+        for (int neighbor : streetConnections[currentStreet]) {
+            if (!visited[neighbor]) {
+                visited[neighbor] = true;
+                queue.push(neighbor);
+                previous[neighbor] = currentStreet;
+            }
+        }
+    }
+
+    return {};  // Retornar caminho vazio se não houver caminho
+}
+
+void drawLineFollowingStreetTopology(const SelectedPoint& point1, const SelectedPoint& point2) {
+    lineCoordinates.clear();  // Limpar as coordenadas da linha anterior
+
+    // 1. Obter o caminho entre as ruas usando o findPathBetweenStreets
+    std::vector<int> streetPath = findPathBetweenStreets(point1.streetIndex, point2.streetIndex);
+
+    // 2. Definir o ponto inicial como o ponto1
+    SelectedPoint currentPoint = point1;
+
+    // Função auxiliar para encontrar o ponto mais próximo em uma rua
+    auto findClosestPointInStreet = [&](int streetIndex, const glm::vec3& targetPoint) -> glm::vec3 {
+        float minDistance = FLT_MAX;
+        glm::vec3 closestPoint;
+        
+        for (const auto& point : worldCoordinates[streetIndex].points) {
+            float distance = glm::length(point.second - targetPoint);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestPoint = point.second;
+            }
+        }
+        return closestPoint;
+    };
+
+    // Função auxiliar para atualizar o ponto atual
+    auto updateCurrentPoint = [&](int streetIndex, const glm::vec3& newPoint) -> SelectedPoint {
+        auto it = std::find_if(
+            worldCoordinates[streetIndex].points.begin(),
+            worldCoordinates[streetIndex].points.end(),
+            [&](const std::pair<float, glm::vec3>& p) { return p.second == newPoint; }
+        );
+        return {streetIndex, it->first};
+    };
+
+    // 3. Loop para seguir o caminho de ruas até o ponto destino
+    for (size_t i = 0; i < streetPath.size(); ++i) {
+        int currentStreetIndex = streetPath[i];
+        glm::vec3 currentPointWorld = worldCoordinates[currentStreetIndex].points[currentPoint.pointPercentage];
+
+        // 3.1 Verificar se o ponto atual é o ponto destino
+        if (currentPoint.streetIndex == point2.streetIndex && currentPoint.pointPercentage == point2.pointPercentage) {
+            break;  // Se estamos no destino, terminamos
+        }
+
+        // 4. Verificar se estamos na rua do ponto destino
+        if (currentStreetIndex == point2.streetIndex) {
+            // 4.1 Traçar linha até o ponto destino e encerrar
+            lineCoordinates.push_back(currentPointWorld);
+            lineCoordinates.push_back(worldCoordinates[point2.streetIndex].points[point2.pointPercentage]);
+            currentPoint = point2;  // Atualizamos o ponto atual para o destino
+            break;
+        }
+
+        // 5. Encontrar o ponto mais próximo da próxima rua
+        int nextStreetIndex = (i + 1 < streetPath.size()) ? streetPath[i + 1] : -1;
+        glm::vec3 closestPointOnNextStreet = findClosestPointInStreet(nextStreetIndex, currentPointWorld);
+
+        // 5.1 Encontrar o ponto mais próximo da rua atual que é o mais próximo da próxima rua
+        glm::vec3 closestPointOnCurrentStreet = findClosestPointInStreet(currentStreetIndex, closestPointOnNextStreet);
+
+        // 5.2 Verificar se o ponto P1 (mais próximo na rua atual) é diferente do ponto atual
+        float distanceToCurrentPoint = glm::length(closestPointOnCurrentStreet - currentPointWorld);
+        if (distanceToCurrentPoint > 0.0f) {
+            // Traçar linha entre o ponto atual e o ponto P1
+            lineCoordinates.push_back(currentPointWorld);
+            lineCoordinates.push_back(closestPointOnCurrentStreet);
+            currentPoint = updateCurrentPoint(currentStreetIndex, closestPointOnCurrentStreet);
+            currentPointWorld = closestPointOnCurrentStreet;  // Atualizar o ponto atual
+        }
+
+        // 5.3 Traçar linha entre o ponto atual (P1) e o ponto mais próximo da próxima rua (P2)
+        float distanceToNextStreetFromCurrent = glm::length(currentPointWorld - closestPointOnNextStreet);
+        if (distanceToNextStreetFromCurrent > 0.0f) {
+            lineCoordinates.push_back(currentPointWorld);
+            lineCoordinates.push_back(closestPointOnNextStreet);
+            currentPoint = updateCurrentPoint(nextStreetIndex, closestPointOnNextStreet);  // Atualizar o ponto atual para P2
+        }
     }
 }
 
@@ -164,21 +263,12 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
             std::cout << "Ponto mais próximo: Rua " << closestStreetIndex 
                       << ", Posição " << closestPointPercentage << "%\n";
 
-            // Adicionar o ponto selecionado
             selectedPoints[pointCount % 2] = {closestStreetIndex, closestPointPercentage};
             pointCount++;
 
-            // Traçar a linha entre os dois pontos, se houver dois pontos selecionados
+            // Se temos dois pontos selecionados, desenhar a linha
             if (pointCount >= 2) {
-                drawLineBetweenSelectedPoints();
-            }
-
-            std::cout << "Pontos selecionados:\n";
-            for (int i = 0; i < 2; ++i) {
-                if (i < pointCount) {
-                    std::cout << "  Ponto " << i+1 << ": Rua " << selectedPoints[i].streetIndex 
-                              << ", Posição " << selectedPoints[i].pointPercentage << "%\n";
-                }
+                drawLineFollowingStreetTopology(selectedPoints[0], selectedPoints[1]);  // Ruas diferentes
             }
         }
     }
@@ -316,6 +406,8 @@ int main(void) {
 
     // Inicializar suavização e outras configurações
     initSmoothRendering();
+
+    initializeStreetConnections();
 
     // Loop principal
     while (!glfwWindowShouldClose(window)) {

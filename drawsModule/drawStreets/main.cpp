@@ -13,6 +13,7 @@ void drawStreets(std::unordered_map<int, StreetPoints>& worldCoordinates, int cl
     glm::mat4 model = glm::mat4(1.0f); 
     int streetIndex = 0;
 
+    //Rua 0
     glPushMatrix();
         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, (streetWidth/2) + (streetLength/2)));
@@ -21,6 +22,7 @@ void drawStreets(std::unordered_map<int, StreetPoints>& worldCoordinates, int cl
         model = glm::mat4(1.0f);    
     glPopMatrix();
 
+    //Rua 1
     glPushMatrix();
         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, -((streetWidth/2) + (streetLength/2))));
@@ -31,12 +33,15 @@ void drawStreets(std::unordered_map<int, StreetPoints>& worldCoordinates, int cl
     
     //______________________________
 
+    //Rua 2
     glPushMatrix();
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, -xOffset*1));
         glMultMatrixf(glm::value_ptr(model));
         createStreetWithWorldCoordinates(streetLength, streetWidth, true, true, 1.0f, 1.0f, streetHeight, model, streetIndex++, worldCoordinates, closestStreetIndex, closestPointPercentage, selectedPoints);
         model = glm::mat4(1.0f); 
     glPopMatrix();
+
+    //Rua 3
 
     glPushMatrix();
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -46,6 +51,7 @@ void drawStreets(std::unordered_map<int, StreetPoints>& worldCoordinates, int cl
     glPopMatrix();
 
     //Ruas da base de piramide
+    //Rua 4
     glPushMatrix();
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, xOffset*1));
         glMultMatrixf(glm::value_ptr(model));
@@ -53,6 +59,7 @@ void drawStreets(std::unordered_map<int, StreetPoints>& worldCoordinates, int cl
         model = glm::mat4(1.0f);
     glPopMatrix();
 
+    //Rua 5
     glPushMatrix();
         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 shearMatrix = glm::mat4(1.0f);
@@ -64,6 +71,7 @@ void drawStreets(std::unordered_map<int, StreetPoints>& worldCoordinates, int cl
         model = glm::mat4(1.0f);
     glPopMatrix();
 
+    //Rua 6
     glPushMatrix();
         model = glm::translate(model, glm::vec3(-streetLength*0.1625, 0.0f, xOffset*2));
         glMultMatrixf(glm::value_ptr(model));  
