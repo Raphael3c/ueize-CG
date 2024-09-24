@@ -1,14 +1,26 @@
 #include "main.h"
 #include "../../utils/calculateWorldCoordinates/main.h"
+#include "../../utils/ilumination/phong_directional/main.h"
 
-// Função que desenha a rua e os pontos
-void createStreet(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, int streetIndex, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints) {
-    glColor3f(0.3f, 0.3f, 0.3f);
+// Função que desenha a rua e aplica iluminação Phong nos vértices
+void createStreet(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, int streetIndex, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints, const Light& light, const Material& material, const Camera& camera) {
+    glm::vec3 normal(0.0f, 1.0f, 0.0f);  // Normal constante para superfícies planas
+
     glBegin(GL_QUADS);
-        glVertex3f(-length / 2, 0.0f, -width / 2);  
-        glVertex3f(length / 2, 0.0f, -width / 2);   
-        glVertex3f(length / 2, 0.0f, width / 2);    
-        glVertex3f(-length / 2, 0.0f, width / 2);   
+        // Aplicar a iluminação Phong em cada vértice
+        for (int i = 0; i < 4; ++i) {
+            glm::vec3 pointPosition;
+            switch (i) {
+                case 0: pointPosition = glm::vec3(-length / 2, 0.0f, -width / 2); break;
+                case 1: pointPosition = glm::vec3(length / 2, 0.0f, -width / 2); break;
+                case 2: pointPosition = glm::vec3(length / 2, 0.0f, width / 2); break;
+                case 3: pointPosition = glm::vec3(-length / 2, 0.0f, width / 2); break;
+            }
+
+            // Aplicar a cor calculada
+            glColor3f(0.3f, 0.3f, 0.3f);
+            glVertex3f(pointPosition.x, pointPosition.y, pointPosition.z);
+        }
     glEnd();
 
     if (drawLeftWall) {
@@ -77,9 +89,11 @@ void createStreet(float length, float width, bool drawLeftWall, bool drawRightWa
     }
 }
 
-// Função que desenha a rua com suas coordenadas de mundo
-void createStreetWithWorldCoordinates(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, glm::mat4 transformMatrix, int streetIndex, std::unordered_map<int, StreetPoints>& worldCoordinates, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints) {
-    createStreet(length, width, drawLeftWall, drawRightWall, leftWallLengthFactor, rightWallLengthFactor, wallHeight, streetIndex, closestStreetIndex, closestPointPercentage, selectedPoints); 
+// Função que desenha a rua com suas coordenadas de mundo e aplica iluminação
+void createStreetWithWorldCoordinates(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, glm::mat4 transformMatrix, int streetIndex, std::unordered_map<int, StreetPoints>& worldCoordinates, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints, const Light& light, const Material& material, const Camera& camera) {
+    // Desenhar a rua com iluminação Phong
+    createStreet(length, width, drawLeftWall, drawRightWall, leftWallLengthFactor, rightWallLengthFactor, wallHeight, streetIndex, closestStreetIndex, closestPointPercentage, selectedPoints, light, material, camera);
 
+    // Calcular coordenadas de mundo para a rua
     calculateWorldCoordinates(streetIndex, transformMatrix, length, worldCoordinates);
 }
