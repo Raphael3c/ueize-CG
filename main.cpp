@@ -39,6 +39,14 @@ float cameraMoveSpeed = 0.5f; // Velocidade do movimento
 // Variáveis de backup da câmera
 float cameraXBP = 6.12207127f, cameraYBP = 289.141296f, cameraZBP = 40.0386086f;
 
+// Variáveis de controle de iluminação e tempo
+bool lanternEnabled = true;  // Lanterna ligada por padrão
+bool sunEnabled = true;      // Sol ligado por padrão
+bool sunRotationEnabled = false;  // Controle para rodar o sol
+float sunRotationAngle = 0.0f;   // Ângulo de rotação do sol
+// Velocidade de rotação do sol para 1 ciclo de 360 graus em 4 segundos
+const float SUN_ROTATION_SPEED = 45.0f;  // 90 graus por segundo
+
 // Variáveis de cursor e clique
 double mouseX = 0.0, mouseY = 0.0;
 int closestStreetIndex = -1;
@@ -58,14 +66,16 @@ void initializeStreetConnections() {
     };
 }
 
+// Variáveis da luz do sol
 Light sun = {
-    glm::vec3(0.2f, 0.2f, 0.2f),    
-    glm::vec3(0.3f, 0.3f, 0.2f),    
-    glm::vec3(0.3f, 0.3f, 0.2f),    
-    glm::normalize(glm::vec3(-0.2f, -1.0f, -0.3f)), 
-    glm::vec3(0.0f, 0.0f, 0.0f)
+    glm::vec3(0.8f),   // ambient - luz ambiente forte e amarelada
+    glm::vec3(0.9f, 0.9f, 0.8f),   // diffuse - luz difusa muito intensa
+    glm::vec3(1.0f, 1.0f, 0.8f),   // specular - brilho especular alto, quase branco
+    glm::normalize(-glm::vec3(-0.2f, -1.0f, -0.3f)), // direção da luz
+    glm::vec3(0.0f, 90.0f, 0.0f)    // posição (geralmente irrelevante para luzes direcionais)
 };
 
+// Função para atualizar a posição da câmera ao longo do caminho
 void updateCameraPosition() {
     if (isCameraMoving && currentCameraIndex < cameraPath.size()) {
         glm::vec3 targetPoint = cameraPath[currentCameraIndex];
@@ -84,8 +94,6 @@ void updateCameraPosition() {
             cameraZ += step.z;
         }
 
-        std::cout << "Câmera Posição - X: " << cameraX << ", Y: " << cameraY << ", Z: " << cameraZ << std::endl;
-
         // Verifica se a câmera chegou ao ponto atual
         if (glm::length(glm::vec3(cameraX, cameraY, cameraZ) - targetPoint) < 0.5f) {
             currentCameraIndex++;
@@ -99,11 +107,20 @@ void updateCameraPosition() {
             cameraX = cameraXBP;
             cameraY = cameraYBP;  // Reinicia com a altura extra
             cameraZ = cameraZBP;
-
-            std::vector<SelectedPoint> reset(2, {0, 0.0f});
-
-            selectedPoints = reset;
         }
+    }
+}
+
+// Função para processar o movimento do sol
+void updateSunPosition(float deltaTime) {
+    if (sunRotationEnabled) {
+        // Atualiza o ângulo do sol com base no tempo delta e velocidade de rotação
+        sunRotationAngle += SUN_ROTATION_SPEED * deltaTime;  // Aumenta o ângulo rapidamente
+        if (sunRotationAngle > 360.0f) {
+            sunRotationAngle -= 360.0f;  // Mantém o ângulo no intervalo 0-360
+        }
+        // O sol vai girar em torno de um círculo em torno do observador (eixo Y)
+        sun.direction = glm::normalize(glm::vec3(cos(glm::radians(sunRotationAngle)), sin(glm::radians(sunRotationAngle)), -0.3f));
     }
 }
 
@@ -226,6 +243,21 @@ void processInput(GLFWwindow* window) {
         cameraX += glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f))).x * cameraSpeed;
         cameraZ += glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f))).z * cameraSpeed;
     }
+
+    // Alternar a lanterna
+    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+        lanternEnabled = !lanternEnabled;
+    }
+
+    // Alternar o sol
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+        sunEnabled = !sunEnabled;
+    }
+
+    // Alternar rotação do sol
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
+        sun.position.y = -sun.position.y;
+    }
 }
 
 // Inicialização de renderização suave
@@ -257,6 +289,8 @@ int main(void) {
     initSmoothRendering();
     initializeStreetConnections();
 
+    float lastFrameTime = glfwGetTime();  // Armazenar o tempo do último frame
+
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
@@ -271,8 +305,16 @@ int main(void) {
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
+        // Calcula o delta time (tempo entre o frame atual e o último)
+        float currentFrameTime = glfwGetTime();
+        float deltaTime = currentFrameTime - lastFrameTime;
+        lastFrameTime = currentFrameTime;
+
         // Atualizar a posição da câmera ao longo do caminho
         updateCameraPosition();
+
+        // Atualizar a posição do sol com base no delta time
+        updateSunPosition(deltaTime);
 
         glm::vec3 cameraFront(
             cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch)),
@@ -280,31 +322,59 @@ int main(void) {
             sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch)));
 
         glm::vec3 cameraPos(cameraX, cameraY, cameraZ);
-        glm::vec3 cameraTarget = cameraPos + cameraFront;  // Novo alvo baseado na direção da câmera
+        glm::vec3 cameraTarget = cameraPos + cameraFront;
 
         gluLookAt(cameraX, cameraY + 10.0f, cameraZ, cameraTarget.x, cameraTarget.y + 10.0f, cameraTarget.z, 0.0f, 1.0f, 0.0f);
 
         Camera camera = { glm::vec3(cameraX, cameraY, cameraZ) };
 
-        glm::vec3 offset = glm::vec3(0.0f, 5.0f, 0.0f); 
-        glm::vec3 behind = -glm::normalize(cameraTarget - camera.position) * 1.5f;
+        glm::vec3 offset = glm::vec3(0.0f, 8.0f, 0.0f); 
+        glm::vec3 behind = -glm::normalize(cameraTarget - camera.position) * 15.0f;
 
         Light lantern = {
-            glm::vec3(0.05f, 0.05f, 0.05f),  
-            glm::vec3(1.0f, 1.0f, 0.8f),     
-            glm::vec3(1.0f, 1.0f, 1.0f),   
-            glm::normalize(cameraTarget - camera.position),     
-            camera.position + offset + behind
-        };
+                glm::vec3(0.0f),  
+                glm::vec3(0.0f),     
+                glm::vec3(0.0f),   
+                glm::normalize(camera.position),     
+                camera.position + offset + behind
+            };
 
-        glPointSize(10.0f);  // Aumenta o tamanho do ponto para que ele fique visível
+        // Controla se a lanterna está ativa
+        if (lanternEnabled) {
+            lantern = {
+                glm::vec3(0.05f, 0.05f, 0.05f),  
+                glm::vec3(0.8f, 0.8f, 0.6f),     
+                glm::vec3(0.8f, 0.8f, 0.8f),   
+                glm::normalize(cameraTarget - camera.position),     
+                camera.position + offset + behind
+            };
 
-        glBegin(GL_POINTS);
-        glColor3f(1.0f, 0.0f, 0.0f);  // Define a cor do ponto como vermelho (pode ser outra)
-        glVertex3f(lantern.position.x, lantern.position.y, lantern.position.z);  // Posição da lanterna
-        glEnd();
+            sun = {
+                glm::vec3(0.0f),    
+                glm::vec3(0.0f),    
+                glm::vec3(0.0f),    
+                glm::normalize(glm::vec3(-0.2f, -1.0f, -0.3f)), 
+                glm::vec3(0.0f, 0.0f, 0.0f)
+            };
+
+            glPointSize(10.0f);  // Aumenta o tamanho do ponto para que ele fique visível
+
+            glBegin(GL_POINTS);
+            glColor3f(1.0f, 0.0f, 0.0f);  // Define a cor do ponto como vermelho (pode ser outra)
+            glVertex3f(lantern.position.x, lantern.position.y, lantern.position.z);  // Posição da lanterna
+            glEnd();
+        }else {
+            sun = {
+                glm::vec3(0.01f, 0.01f, 0.01f),    
+                glm::vec3(0.5f, 0.5f, 0.5f),    
+                glm::vec3(0.6f, 0.6f, 0.6f),    
+                glm::normalize(glm::vec3(-0.2f, -1.0f, -0.3f)), 
+                glm::vec3(0.0f, 0.0f, 0.0f)
+            };
+        }
 
         drawStreets(worldCoordinates, closestStreetIndex, closestPointPercentage, selectedPoints, camera, sun, lantern);
+
         drawInfiniteLines();
         drawLine();
 

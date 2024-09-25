@@ -45,21 +45,21 @@ void createStreet(
         p2 = glm::vec3(model * glm::vec4(p2, 1.0f));
 
         glm::vec3 color = shading(p0, normalFloor, light, material, camera);
-        glm::vec3 color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 65.0f);
+        glm::vec3 color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 40.0f);
         glm::vec3 finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
         glVertex3f(p0.x, p0.y, p0.z);
 
         color = shading(p1, normalFloor, light, material, camera);
-        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 65.0f);
+        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 40.0f);
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
         glVertex3f(p1.x, p1.y, p1.z);
 
         color = shading(p2, normalFloor, light, material, camera);
-        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 65.0f);
+        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 40.0f);
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
@@ -76,21 +76,21 @@ void createStreet(
         p2 = glm::vec3(model * glm::vec4(p2, 1.0f));
 
         color = shading(p0, normalFloor, light, material, camera);
-        color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 65.0f);
+        color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 40.0f);
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
         glVertex3f(p0.x, p0.y, p0.z);
 
         color = shading(p1, normalFloor, light, material, camera);
-        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 65.0f);
+        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 40.0f);
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
         glVertex3f(p1.x, p1.y, p1.z);
 
         color = shading(p2, normalFloor, light, material, camera);
-        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 65.0f);
+        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 40.0f);
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
@@ -119,19 +119,19 @@ void createStreet(
                 p2 = glm::vec3(model * glm::vec4(p2, 1.0f));
 
                 glm::vec3 color = shading(p0, normalLeftWall, light, material, camera);
-                glm::vec3 color_spot = shading_spot(p0, normalLeftWall, light_spot, material, camera, 65.0f);
+                glm::vec3 color_spot = shading_spot(p0, normalLeftWall, light_spot, material, camera, 40.0f);
                 glm::vec3 finalColor = color + color_spot;
                 glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);
                 glVertex3f(p0.x, p0.y, p0.z);
 
                 color = shading(p1, normalLeftWall, light, material, camera);
-                color_spot = shading_spot(p1, normalLeftWall, light_spot, material, camera, 65.0f);
+                color_spot = shading_spot(p1, normalLeftWall, light_spot, material, camera, 40.0f);
                 finalColor = color + color_spot;
                 glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);
                 glVertex3f(p1.x, p1.y, p1.z);
 
                 color = shading(p2, normalLeftWall, light, material, camera);
-                color_spot = shading_spot(p2, normalLeftWall, light_spot, material, camera, 65.0f);
+                color_spot = shading_spot(p2, normalLeftWall, light_spot, material, camera, 40.0f);
                 finalColor = color + color_spot;
                 glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);
                 glVertex3f(p2.x, p2.y, p2.z);
@@ -147,19 +147,19 @@ void createStreet(
                 p2 = glm::vec3(model * glm::vec4(p2, 1.0f));
 
                 color = shading(p0, normalLeftWall, light, material, camera);
-                color_spot = shading_spot(p0, normalLeftWall, light_spot, material, camera, 65.0f);
+                color_spot = shading_spot(p0, normalLeftWall, light_spot, material, camera, 40.0f);
                 finalColor = color + color_spot;
                 glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);
                 glVertex3f(p0.x, p0.y, p0.z);
 
                 color = shading(p1, normalLeftWall, light, material, camera);
-                color_spot = shading_spot(p1, normalLeftWall, light_spot, material, camera, 65.0f);
+                color_spot = shading_spot(p1, normalLeftWall, light_spot, material, camera, 40.0f);
                 finalColor = color + color_spot;
                 glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);
                 glVertex3f(p1.x, p1.y, p1.z);
 
                 color = shading(p2, normalLeftWall, light, material, camera);
-                color_spot = shading_spot(p2, normalLeftWall, light_spot, material, camera, 65.0f);
+                color_spot = shading_spot(p2, normalLeftWall, light_spot, material, camera, 40.0f);
                 finalColor = color + color_spot;
                 glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);
                 glVertex3f(p2.x, p2.y, p2.z);
@@ -194,10 +194,10 @@ void createStreet(
             glm::vec3 color2 = shading(point2, normalRightWall, light, material, camera);
             glm::vec3 color3 = shading(point3, normalRightWall, light, material, camera);
 
-            glm::vec3 color0_spot = shading_spot(point0, normalRightWall, light_spot, material, camera, 65.0f);
-            glm::vec3 color1_spot = shading_spot(point1, normalRightWall, light_spot, material, camera, 65.0f);
-            glm::vec3 color2_spot= shading_spot(point2, normalRightWall, light_spot, material, camera, 65.0f);
-            glm::vec3 color3_spot= shading_spot(point3, normalRightWall, light_spot, material, camera, 65.0f);
+            glm::vec3 color0_spot = shading_spot(point0, normalRightWall, light_spot, material, camera, 40.0f);
+            glm::vec3 color1_spot = shading_spot(point1, normalRightWall, light_spot, material, camera, 40.0f);
+            glm::vec3 color2_spot= shading_spot(point2, normalRightWall, light_spot, material, camera, 40.0f);
+            glm::vec3 color3_spot= shading_spot(point3, normalRightWall, light_spot, material, camera, 40.0f);
 
             glm::vec3 finalColor = color0 + color0_spot;
             glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);

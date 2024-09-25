@@ -28,16 +28,18 @@ glm::vec3 shading_spot(const glm::vec3& point, const glm::vec3& normal, const Li
     
     float spotEffect = glm::dot(glm::normalize(light.direction), -lightDir);
     
-    float intensity = glm::clamp((spotEffect - glm::cos(glm::radians(cutoffAngle))) / (1.0f - glm::cos(glm::radians(cutoffAngle))), 0.0f, 1.0f);
+    float cutoffCos = glm::cos(glm::radians(cutoffAngle));
     
-    if (intensity > 0.0f) {
-        glm::vec3 shadeDiffuse = light.diffuse * material.diffuse * glm::max(0.0f, glm::dot(normalVec, lightDir)) * intensity;
+    float smoothFalloff = glm::pow(glm::clamp((spotEffect - cutoffCos) / (1.0f - cutoffCos), 0.0f, 1.0f), 30.0f);  // Expoente 2 para suavização
+
+    if (smoothFalloff > 0.0f) {
+        glm::vec3 shadeDiffuse = light.diffuse * material.diffuse * glm::max(0.0f, glm::dot(normalVec, lightDir)) * smoothFalloff;
         
         glm::vec3 viewDir = glm::normalize(camera.position - point);
         
         glm::vec3 reflectDir = glm::reflect(-lightDir, normalVec);
         
-        glm::vec3 shadeSpecular = light.specular * material.specular * glm::pow(glm::max(0.0f, glm::dot(viewDir, reflectDir)), material.shininess) * intensity;
+        glm::vec3 shadeSpecular = light.specular * material.specular * glm::pow(glm::max(0.0f, glm::dot(viewDir, reflectDir)), material.shininess) * smoothFalloff;
         
         return shadeAmbient + shadeDiffuse + shadeSpecular;
     }
