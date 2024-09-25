@@ -11,7 +11,7 @@
 #include <queue>
 #include <iomanip>
 
-// Meus módulos
+// Módulos personalizados
 #include "drawsModule/drawInfiniteLines/main.h"
 #include "drawsModule/drawStreets/main.h"
 #include "drawsModule/drawLineFollowingStreetTopology/main.h"
@@ -25,18 +25,13 @@ std::unordered_map<int, std::vector<int>> streetConnections;
 
 // Variáveis globais da câmera
 float cameraX = 6.12207127f, cameraY = 289.141296f, cameraZ = 40.0386086f;
-
-float cameraXS = 6.12207127f, cameraYS = 289.141296f, cameraZS = 40.0386086f;
-
-float cameraYaw = glm::degrees(atan2(-cameraZ, -cameraX));  // Calcular yaw baseado na posição atual
-float cameraPitch = glm::degrees(atan2(-cameraY, sqrt(cameraX * cameraX + cameraZ * cameraZ)));  // Calcular pitch
-float cameraSpeed = 0.5f, mouseSensitivity = 0.1f;
-
+float cameraYaw = glm::degrees(atan2(-cameraZ, -cameraX));
+float cameraPitch = glm::degrees(atan2(-cameraY, sqrt(cameraX * cameraX + cameraZ * cameraZ)));
+float cameraSpeed = 2.0f, mouseSensitivity = 0.1f;
 float lastX = 320.0f, lastY = 240.0f;
-bool firstMouse = true, controlCamera = true, printOnlyOne = true;
+bool firstMouse = true, controlCamera = true;
 
 // Variáveis de cursor e clique
-float customCursorX = 0.0f, customCursorY = 0.0f;
 double mouseX = 0.0, mouseY = 0.0;
 int closestStreetIndex = -1;
 float closestPointPercentage = -1.0f;
@@ -47,29 +42,6 @@ std::vector<SelectedPoint> selectedPoints(2, {0, 0.0f});
 std::vector<glm::vec3> lineCoordinates;
 int pointCount = 0;
 
-//Definindo a posição da luz
-Light light = {
-    glm::vec3(0.0f, -1.0f, 0.0f),  // direção da luz
-    glm::vec3(0.9f, 0.9f, 0.9f),  // ambient - quase branco/cinza
-    glm::vec3(0.8f, 0.8f, 0.8f),  // diffuse - quase branco/cinza
-    glm::vec3(1.0f, 1.0f, 1.0f),  // specular - brilho intenso
-    glm::vec3(1.0f, 1.0f, 1.0f)   // posicao da luz
-};
-
-Light light_spot = {
-    glm::vec3(0.0f, 0.0f, -1.0f),  // direção inicial (será atualizada para seguir a câmera)
-    glm::vec3(0.1f, 0.1f, 0.1f),  // ambient - luz ambiente fraca
-    glm::vec3(1.0f, 1.0f, 1.0f),  // diffuse - luz branca forte para simular o farol
-    glm::vec3(1.0f, 1.0f, 1.0f),  // specular - brilho intenso
-    glm::vec3(0.0f, 60.0f, 0.0f)  // posição inicial da luz (seguirá a câmera)
-};
-
-bool isCameraMoving = false;  // Controla se a câmera está em movimento
-std::vector<glm::vec3> cameraPath;  // Armazena o caminho da câmera
-int currentCameraIndex = 0;  // Índice do ponto atual no caminho da câmera
-float cameraMoveSpeed = 0.2f;  // Velocidade de movimento da câmera
-glm::vec3 cameraDirection;  // Direção atual da câmera
-
 // Inicialização das conexões entre ruas
 void initializeStreetConnections() {
     streetConnections = {
@@ -78,15 +50,13 @@ void initializeStreetConnections() {
     };
 }
 
-void drawLightSpotPosition(const glm::vec3& position) {
-    glPointSize(30.0f);  // Defina o tamanho do ponto
-    glColor3f(1.0f, 1.0f, 1.0f);  // Cor amarela para o ponto, para destacar a luz
-
-    glBegin(GL_POINTS);
-        glVertex3f(position.x, position.y, position.z);  // Desenha o ponto na posição da luz spot
-    glEnd();
-}
-
+Light sun = {
+    glm::vec3(0.2f, 0.2f, 0.2f),    
+    glm::vec3(1.0f, 1.0f, 0.9f),    
+    glm::vec3(1.0f, 1.0f, 0.9f),    
+    glm::normalize(glm::vec3(-0.2f, -1.0f, -0.3f)), 
+    glm::vec3(0.0f, 0.0f, 0.0f)
+};
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
@@ -121,31 +91,13 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
         }
 
         if (closestStreetIndex != -1) {
-            std::cout << "Ponto mais próximo: Rua " << closestStreetIndex 
-                      << ", Posição " << closestPointPercentage << "%\n";
-
             selectedPoints[pointCount % 2] = {closestStreetIndex, closestPointPercentage};
             pointCount++;
 
             if (pointCount >= 2) {
                 drawLineFollowingStreetTopology(selectedPoints[0], selectedPoints[1], streetConnections);
 
-                // Iniciar o movimento da câmera ao longo do caminho
-                cameraPath = lineCoordinates;  // Atribui as coordenadas da linha ao caminho da câmera
-                isCameraMoving = true;  // Iniciar o movimento
-                controlCamera = true;
-                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-                currentCameraIndex = 0;  // Reseta o índice de controle do caminho
-
-                // Reposicionar a câmera ligeiramente acima do ponto inicial
-                glm::vec3 startPosition = cameraPath[0];
-                cameraX = startPosition.x;
-                cameraY = startPosition.y + 20.0f;  // A câmera está 10 unidades acima do ponto inicial
-                cameraZ = startPosition.z;
-
-                // Definir a direção inicial da câmera para o próximo ponto
-                cameraDirection = glm::normalize(cameraPath[1] - startPosition);
+                lineCoordinates = {}; // Resetar coordenadas da linha
             }
         }
     }
@@ -156,13 +108,7 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     mouseX = xpos;
     mouseY = ypos;
 
-    if (!controlCamera) {
-        int windowWidth, windowHeight;
-        glfwGetWindowSize(window, &windowWidth, &windowHeight);
-        customCursorX = (xpos / windowWidth) * 2.0f - 1.0f;
-        customCursorY = 1.0f - (ypos / windowHeight) * 2.0f;
-        return;
-    }
+    if (!controlCamera) return;
 
     if (firstMouse) {
         lastX = xpos;
@@ -186,28 +132,18 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     if (cameraPitch < -89.0f) cameraPitch = -89.0f;
 }
 
+// Função para processar entrada de teclado
 void processInput(GLFWwindow* window) {
-    if(isCameraMoving) return;
-
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
         controlCamera = !controlCamera;
         glfwSetInputMode(window, GLFW_CURSOR, controlCamera ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
     }
 
-    // Calcula o vetor para onde a câmera está "frente"
     glm::vec3 cameraFront = glm::normalize(glm::vec3(
         cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch)),
         sin(glm::radians(cameraPitch)),
-        sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch))
-    ));
+        sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch))));
 
-    // Calcula o vetor "direita" usando o produto vetorial entre a frente e o vetor "up" (que no caso é (0,1,0) para manter o eixo Y como 'cima')
-    glm::vec3 cameraRight = glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f)));
-
-    // O vetor "up" da câmera permanece fixo no eixo Y, já que não estamos girando no plano vertical
-    glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-    // Movimento para frente (W) e para trás (S)
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         cameraX += cameraSpeed * cameraFront.x;
         cameraY += cameraSpeed * cameraFront.y;
@@ -218,70 +154,25 @@ void processInput(GLFWwindow* window) {
         cameraY -= cameraSpeed * cameraFront.y;
         cameraZ -= cameraSpeed * cameraFront.z;
     }
-
-    // Movimento para esquerda (A) e direita (D)
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        cameraX -= cameraSpeed * cameraRight.x;
-        cameraZ -= cameraSpeed * cameraRight.z;
+        cameraX -= glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f))).x * cameraSpeed;
+        cameraZ -= glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f))).z * cameraSpeed;
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        cameraX += cameraSpeed * cameraRight.x;
-        cameraZ += cameraSpeed * cameraRight.z;
+        cameraX += glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f))).x * cameraSpeed;
+        cameraZ += glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f))).z * cameraSpeed;
     }
 }
 
 // Inicialização de renderização suave
 void initSmoothRendering() {
     glEnable(GL_POINT_SMOOTH);
-    // glEnable(GL_LINE_SMOOTH);
-    // glEnable(GL_POLYGON_SMOOTH);
     glEnable(GL_BLEND);
     glEnable(GL_NORMALIZE);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-}
-
-float timeOfDay = 0.0f;  // Começa à meia-noite
-
-void updateLightProperties(Light& light, float timeOfDay) {
-    float angle = glm::radians(timeOfDay);
-    
-    // Simular a direção do Sol
-    light.direction = glm::normalize(glm::vec3(sin(angle), cos(angle), 0.0f));
-    
-    // Alterar a cor da luz ao longo do dia (mais quente pela manhã e fria à tarde)
-    if (timeOfDay < 180.0f) {
-        light.diffuse = glm::vec3(1.0f, 0.9f, 0.7f);  // Manhã (amarelo/laranja)
-    } else {
-        light.diffuse = glm::vec3(1.0f, 1.0f, 1.0f);  // Tarde (branco)
-    }
-    
-    // À noite, apagar a luz
-    if (timeOfDay > 240.0f && timeOfDay < 360.0f) {
-        light.ambient = glm::vec3(0.1f, 0.1f, 0.2f);  // Luz ambiente fraca
-        light.diffuse = glm::vec3(0.0f, 0.0f, 0.1f);  // Luz difusa quase apagada
-        light.specular = glm::vec3(0.0f);  // Sem brilho especular
-    }
-}
-
-// Função para desenhar o ponto de luz orbitando em torno do eixo Z em direção ao eixo X
-void drawLightOrbit(const Light& light, float timeOfDay) {
-    float radius = 50.0f;  // Raio da órbita do Sol
-    float angle = glm::radians(timeOfDay);  // Converte o tempo do dia em ângulo
-
-    // Calcular a posição da luz (ponto orbitando ao redor do eixo Z)
-    float x = radius * cos(angle);  // Rotação em torno do eixo Z
-    float y = radius * sin(angle);  // Rotação em torno do eixo Z
-    glm::vec3 lightPosition = glm::vec3(x, y, 80.0f);  // Mantendo Z fixo para simular o movimento ao longo de X-Y
-
-    // Desenhar o ponto de luz na órbita
-    glPointSize(15.0f);  // Tamanho do ponto para ficar mais visível
-    glColor3f(1.0f, 1.0f, 0.0f);  // Cor amarela para simular o Sol
-    glBegin(GL_POINTS);
-        glVertex3f(lightPosition.x, lightPosition.y, lightPosition.z);  // Posição do ponto de luz
-    glEnd();
 }
 
 int main(void) {
@@ -302,101 +193,58 @@ int main(void) {
     initSmoothRendering();
     initializeStreetConnections();
 
-while (!glfwWindowShouldClose(window)) {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
+    while (!glfwWindowShouldClose(window)) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
 
-    int windowWidth, windowHeight;
-    glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
-    float aspectRatio = (float)windowWidth / (float)windowHeight;
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(45.0, aspectRatio, 0.1, 600.0);
+        int windowWidth, windowHeight;
+        glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
+        float aspectRatio = (float)windowWidth / (float)windowHeight;
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        gluPerspective(45.0, aspectRatio, 0.1, 600.0);
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
 
-    if (isCameraMoving && !cameraPath.empty()) {
-        glm::vec3 targetPoint = cameraPath[currentCameraIndex];
+        glm::vec3 cameraFront(
+            cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch)),
+            sin(glm::radians(cameraPitch)),
+            sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch)));
 
-        // Calcula a direção e a movimentação da câmera
-        glm::vec3 moveDirection = glm::normalize(targetPoint - glm::vec3(cameraX, cameraY, cameraZ));
-        glm::vec3 moveStep = moveDirection * cameraMoveSpeed;
+        glm::vec3 cameraPos(cameraX, cameraY, cameraZ);
+        glm::vec3 cameraTarget = cameraPos + cameraFront;
 
-        // Atualiza a posição da câmera
-        cameraX += moveStep.x;
-        cameraY += moveStep.y;
-        cameraZ += moveStep.z;
+        gluLookAt(cameraX, cameraY, cameraZ, cameraTarget.x, cameraTarget.y, cameraTarget.z, 0.0f, 1.0f, 0.0f);
 
-        // Verifica se a câmera chegou ao ponto alvo e atualiza para o próximo ponto
-        if (glm::length(glm::vec3(cameraX, cameraY, cameraZ) - targetPoint) < 0.1f) {
-            currentCameraIndex++;
-            if (currentCameraIndex >= cameraPath.size()) {
-                isCameraMoving = false;  // Movimento concluído
-                cameraX = cameraXS;
-                cameraY = cameraYS;
-                cameraZ = cameraZS;
+        Camera camera = { glm::vec3(cameraX, cameraY, cameraZ) };
 
-                cameraYaw = glm::degrees(atan2(-cameraZ, -cameraX));  // Calcular yaw baseado na posição atual
-                cameraPitch = glm::degrees(atan2(-cameraY, sqrt(cameraX * cameraX + cameraZ * cameraZ)));  // Calcular pitch
-            }
-        }
+        glm::vec3 offset = glm::vec3(0.0f, 5.0f, 0.0f); 
+        glm::vec3 behind = -glm::normalize(cameraTarget - camera.position) * 1.5f;
 
-        // Atualizar a direção da câmera para seguir o próximo ponto
-        if (currentCameraIndex < cameraPath.size() - 1) {
-            cameraDirection = glm::normalize(cameraPath[currentCameraIndex + 1] - glm::vec3(cameraX, cameraY, cameraZ));
-        }
+        Light lantern = {
+            glm::vec3(0.05f, 0.05f, 0.05f),  
+            glm::vec3(1.0f, 1.0f, 0.8f),     
+            glm::vec3(1.0f, 1.0f, 1.0f),   
+            glm::normalize(cameraTarget - camera.position),     
+            camera.position + offset + behind
+        };
+
+        glPointSize(10.0f);  // Aumenta o tamanho do ponto para que ele fique visível
+
+        glBegin(GL_POINTS);
+        glColor3f(1.0f, 0.0f, 0.0f);  // Define a cor do ponto como vermelho (pode ser outra)
+        glVertex3f(lantern.position.x, lantern.position.y, lantern.position.z);  // Posição da lanterna
+        glEnd();
+
+        drawStreets(worldCoordinates, closestStreetIndex, closestPointPercentage, selectedPoints, camera, sun, lantern);
+        drawInfiniteLines();
+        drawLine();
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+        processInput(window);
     }
-
-    // Restante do código de movimentação da câmera
-    glm::vec3 cameraFront(
-        cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch)),
-        sin(glm::radians(cameraPitch)),
-        sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch)));
-
-    glm::vec3 cameraPos(cameraX, cameraY, cameraZ);
-    glm::vec3 cameraTarget = cameraPos + cameraFront;
-
-    gluLookAt(cameraX, cameraY, cameraZ, cameraTarget.x, cameraTarget.y, cameraTarget.z, 0.0f, 1.0f, 0.0f);
-    
-    // Atualiza a posição da luz spot para a posição da câmera
-    light_spot.position = glm::vec3(cameraX, cameraY, cameraZ);
-
-    // Atualiza a direção da luz para seguir a direção que a câmera está "olhando"
-    light_spot.direction = glm::normalize(cameraFront);
-    
-    Camera camera = {
-        glm::vec3(cameraX, cameraY, cameraZ),  
-    };
-
-    // drawLightOrbit(light, timeOfDay);
-    updateLightProperties(light, timeOfDay);
-
-    // Incrementar o tempo do dia (controla a velocidade do movimento do Sol)
-    timeOfDay += 0.5f;
-
-    if (timeOfDay > 360.0f) {
-        timeOfDay = 0.0f;  // Reseta o ciclo para simular o próximo dia
-    }
-
-    drawStreets(
-        worldCoordinates, 
-        closestStreetIndex, 
-        closestPointPercentage, 
-        selectedPoints, camera, 
-        light, 
-        light_spot
-    );
-    
-    
-    drawInfiniteLines();
-    drawLine();
-
-    glfwSwapBuffers(window);
-    glfwPollEvents();
-
-    processInput(window);
-}
 
     glfwTerminate();
     return 0;
