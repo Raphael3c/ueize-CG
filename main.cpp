@@ -31,6 +31,14 @@ float cameraSpeed = 2.0f, mouseSensitivity = 0.1f;
 float lastX = 320.0f, lastY = 240.0f;
 bool firstMouse = true, controlCamera = true;
 
+int currentCameraIndex = 0;
+bool isCameraMoving = false;
+std::vector<glm::vec3> cameraPath;  // Para armazenar o caminho da câmera
+float cameraMoveSpeed = 0.5f; // Velocidade do movimento
+
+// Variáveis de backup da câmera
+float cameraXBP = 6.12207127f, cameraYBP = 289.141296f, cameraZBP = 40.0386086f;
+
 // Variáveis de cursor e clique
 double mouseX = 0.0, mouseY = 0.0;
 int closestStreetIndex = -1;
@@ -52,12 +60,54 @@ void initializeStreetConnections() {
 
 Light sun = {
     glm::vec3(0.2f, 0.2f, 0.2f),    
-    glm::vec3(1.0f, 1.0f, 0.9f),    
-    glm::vec3(1.0f, 1.0f, 0.9f),    
+    glm::vec3(0.3f, 0.3f, 0.2f),    
+    glm::vec3(0.3f, 0.3f, 0.2f),    
     glm::normalize(glm::vec3(-0.2f, -1.0f, -0.3f)), 
     glm::vec3(0.0f, 0.0f, 0.0f)
 };
 
+void updateCameraPosition() {
+    if (isCameraMoving && currentCameraIndex < cameraPath.size()) {
+        glm::vec3 targetPoint = cameraPath[currentCameraIndex];
+
+        // Calcula a direção e o passo da câmera
+        glm::vec3 direction = targetPoint - glm::vec3(cameraX, cameraY, cameraZ);
+
+        // Verifica se o vetor direction tem tamanho não-nulo
+        if (glm::length(direction) > 0.001f) {
+            direction = glm::normalize(direction);  // Somente normaliza se for válido
+            glm::vec3 step = direction * cameraMoveSpeed;
+
+            // Atualiza a posição da câmera
+            cameraX += step.x;
+            cameraY += step.y;  // Adiciona a altura extra
+            cameraZ += step.z;
+        }
+
+        std::cout << "Câmera Posição - X: " << cameraX << ", Y: " << cameraY << ", Z: " << cameraZ << std::endl;
+
+        // Verifica se a câmera chegou ao ponto atual
+        if (glm::length(glm::vec3(cameraX, cameraY, cameraZ) - targetPoint) < 0.5f) {
+            currentCameraIndex++;
+        }
+
+        // Se chegou ao final do caminho
+        if (currentCameraIndex >= cameraPath.size()) {
+            isCameraMoving = false;
+
+            // Reiniciar a câmera para as posições de backup
+            cameraX = cameraXBP;
+            cameraY = cameraYBP;  // Reinicia com a altura extra
+            cameraZ = cameraZBP;
+
+            std::vector<SelectedPoint> reset(2, {0, 0.0f});
+
+            selectedPoints = reset;
+        }
+    }
+}
+
+// Função para processar o clique do mouse
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         mousePressed = true;
@@ -75,6 +125,7 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
         glm::vec3 cameraPosition = glm::vec3(cameraX, cameraY, cameraZ);
         float minDistance = FLT_MAX;
 
+        // Encontrar o ponto mais próximo
         for (const auto& street : worldCoordinates) {
             for (const auto& point : street.second.points) {
                 glm::vec3 toPoint = point.second - cameraPosition;
@@ -91,13 +142,26 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
         }
 
         if (closestStreetIndex != -1) {
+            // Armazena os pontos selecionados
             selectedPoints[pointCount % 2] = {closestStreetIndex, closestPointPercentage};
             pointCount++;
 
+            // Se dois pontos forem selecionados, desenha a linha e move a câmera
             if (pointCount >= 2) {
+                lineCoordinates.clear();  // Limpa antes de traçar nova linha
                 drawLineFollowingStreetTopology(selectedPoints[0], selectedPoints[1], streetConnections);
 
-                lineCoordinates = {}; // Resetar coordenadas da linha
+                // Atualizar caminho da câmera
+                cameraPath = lineCoordinates;  // Atribuir o caminho para a câmera
+                currentCameraIndex = 0;  // Resetar o índice da câmera
+                isCameraMoving = true;  // Ativar o movimento
+
+                // Teletransportar a câmera para o início do caminho
+                if (!cameraPath.empty()) {
+                    cameraX = cameraPath[0].x;
+                    cameraY = cameraPath[0].y + 20.0f;  // Um pouco acima do ponto inicial
+                    cameraZ = cameraPath[0].z;
+                }
             }
         }
     }
@@ -202,10 +266,13 @@ int main(void) {
         float aspectRatio = (float)windowWidth / (float)windowHeight;
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        gluPerspective(45.0, aspectRatio, 0.1, 600.0);
+        gluPerspective(45.0, aspectRatio, 0.1, 1000.0);  // Aumente o far clipping plane de 600.0 para 1000.0
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
+
+        // Atualizar a posição da câmera ao longo do caminho
+        updateCameraPosition();
 
         glm::vec3 cameraFront(
             cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch)),
@@ -213,9 +280,9 @@ int main(void) {
             sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch)));
 
         glm::vec3 cameraPos(cameraX, cameraY, cameraZ);
-        glm::vec3 cameraTarget = cameraPos + cameraFront;
+        glm::vec3 cameraTarget = cameraPos + cameraFront;  // Novo alvo baseado na direção da câmera
 
-        gluLookAt(cameraX, cameraY, cameraZ, cameraTarget.x, cameraTarget.y, cameraTarget.z, 0.0f, 1.0f, 0.0f);
+        gluLookAt(cameraX, cameraY + 10.0f, cameraZ, cameraTarget.x, cameraTarget.y + 10.0f, cameraTarget.z, 0.0f, 1.0f, 0.0f);
 
         Camera camera = { glm::vec3(cameraX, cameraY, cameraZ) };
 
