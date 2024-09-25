@@ -2,7 +2,6 @@
 #include "../../utils/calculateWorldCoordinates/main.h"
 #include "../../utils/ilumination/phong_directional/main.h"
 
-// Função que desenha a rua e aplica iluminação Phong nos vértices
 void createStreet(
     float length, 
     float width, 
@@ -24,127 +23,119 @@ void createStreet(
     glm::vec3 normalRightWall
 ) {
     glBegin(GL_TRIANGLES);
-    // Subdividindo a rua em múltiplos triângulos
-    int numSegments = 300;  // Definindo 20 triângulos, ou seja, 10 subdivisões
+    int numSegments = 300;
 
     for (int i = 0; i < numSegments; ++i) {
         float t0 = (float)i / numSegments;
         float t1 = (float)(i + 1) / numSegments;
 
-        // Triângulo 1
+        // Triângulo 1 (Piso)
         glm::vec3 p0 = glm::vec3(-length / 2 + t0 * length, 0.0f, -width / 2);
         glm::vec3 p1 = glm::vec3(-length / 2 + t1 * length, 0.0f, -width / 2);
         glm::vec3 p2 = glm::vec3(-length / 2 + t0 * length, 0.0f, width / 2);
 
         glm::vec3 color = shading(p0, normalFloor, light, material, camera);
-        glm::vec3 color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 30.0f);
+        glm::vec3 color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 65.0f);
 
-        // Misturar as duas cores somando as contribuições
         glm::vec3 finalColor = color + color_spot;
 
-        // Aplicar a cor calculada no vértice
-        glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glNormal3f(normalFloor.x, normalFloor.y, normalFloor.z); // Define a normal para o vértice p0
+        glColor3f(0.3f*finalColor.r, 0.3f*finalColor.g, 0.3f*finalColor.b);
         glVertex3f(p0.x, p0.y, p0.z);
 
         color = shading(p1, normalFloor, light, material, camera);
-        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 30.0f);
-
-        // Misturar as duas cores somando as contribuições
+        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 65.0f);
         finalColor = color + color_spot;
 
-        // Aplicar a cor calculada no vértice
-        glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glNormal3f(normalFloor.x, normalFloor.y, normalFloor.z); // Define a normal para o vértice p1
+        glColor3f(0.3f*finalColor.r, 0.3f*finalColor.g, 0.3f*finalColor.b);
         glVertex3f(p1.x, p1.y, p1.z);
 
         color = shading(p2, normalFloor, light, material, camera);
-        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 30.0f);
-
-        // Misturar as duas cores somando as contribuições
+        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 65.0f);
         finalColor = color + color_spot;
 
-        // Aplicar a cor calculada no vértice
-        glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glNormal3f(normalFloor.x, normalFloor.y, normalFloor.z); // Define a normal para o vértice p2
+        glColor3f(0.3f*finalColor.r, 0.3f*finalColor.g, 0.3f*finalColor.b);
         glVertex3f(p2.x, p2.y, p2.z);
 
-        // Triângulo 2
+        // Triângulo 2 (Piso)
         p0 = glm::vec3(-length / 2 + t1 * length, 0.0f, -width / 2);
         p1 = glm::vec3(-length / 2 + t1 * length, 0.0f, width / 2);
         p2 = glm::vec3(-length / 2 + t0 * length, 0.0f, width / 2);
 
         color = shading(p0, normalFloor, light, material, camera);
-        color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 30.0f);
-
-        // Misturar as duas cores somando as contribuições
+        color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 65.0f);
         finalColor = color + color_spot;
 
-        // Aplicar a cor calculada no vértice
-        glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glNormal3f(normalFloor.x, normalFloor.y, normalFloor.z); // Define a normal para o vértice p0
+        glColor3f(0.3f*finalColor.r, 0.3f*finalColor.g, 0.3f*finalColor.b);
         glVertex3f(p0.x, p0.y, p0.z);
 
         color = shading(p1, normalFloor, light, material, camera);
-        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 30.0f);
-
-        // Misturar as duas cores somando as contribuições
+        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 65.0f);
         finalColor = color + color_spot;
 
-        // Aplicar a cor calculada no vértice
-        glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glNormal3f(normalFloor.x, normalFloor.y, normalFloor.z); // Define a normal para o vértice p1
+        glColor3f(0.3f*finalColor.r, 0.3f*finalColor.g, 0.3f*finalColor.b);
         glVertex3f(p1.x, p1.y, p1.z);
 
         color = shading(p2, normalFloor, light, material, camera);
-        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 30.0f);
-
-        // Misturar as duas cores somando as contribuições
+        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 65.0f);
         finalColor = color + color_spot;
 
-        // Aplicar a cor calculada no vértice
-        glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glNormal3f(normalFloor.x, normalFloor.y, normalFloor.z); // Define a normal para o vértice p2
+        glColor3f(0.3f*finalColor.r, 0.3f*finalColor.g, 0.3f*finalColor.b);
         glVertex3f(p2.x, p2.y, p2.z);
     }
     glEnd();
 
-
-    // Subdividindo a parede esquerda em múltiplos triângulos
+    // Paredes (esquerda e direita)
     if (drawLeftWall) {
         float leftWallLength = length * leftWallLengthFactor;
-
         glBegin(GL_TRIANGLES);
         for (int i = 0; i < numSegments; ++i) {
             float t0 = (float)i / numSegments;
             float t1 = (float)(i + 1) / numSegments;
 
-            // Triângulo 1
+            // Triângulo 1 (Parede Esquerda)
             glm::vec3 p0 = glm::vec3(-length / 2 + t0 * leftWallLength, 0.0f, -width / 2);
             glm::vec3 p1 = glm::vec3(-length / 2 + t1 * leftWallLength, 0.0f, -width / 2);
             glm::vec3 p2 = glm::vec3(-length / 2 + t0 * leftWallLength, wallHeight, -width / 2);
 
             glm::vec3 color = shading(p0, normalLeftWall, light, material, camera);
-            glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+            glNormal3f(normalLeftWall.x, normalLeftWall.y, normalLeftWall.z);  // Define a normal
+            glColor3f(color.r, color.g, color.b);
             glVertex3f(p0.x, p0.y, p0.z);
 
             color = shading(p1, normalLeftWall, light, material, camera);
-            glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+            glNormal3f(normalLeftWall.x, normalLeftWall.y, normalLeftWall.z);  // Define a normal
+            glColor3f(color.r, color.g, color.b);
             glVertex3f(p1.x, p1.y, p1.z);
 
             color = shading(p2, normalLeftWall, light, material, camera);
-            glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+            glNormal3f(normalLeftWall.x, normalLeftWall.y, normalLeftWall.z);  // Define a normal
+            glColor3f(color.r, color.g, color.b);
             glVertex3f(p2.x, p2.y, p2.z);
 
-            // Triângulo 2
+            // Triângulo 2 (Parede Esquerda)
             p0 = glm::vec3(-length / 2 + t1 * leftWallLength, 0.0f, -width / 2);
             p1 = glm::vec3(-length / 2 + t1 * leftWallLength, wallHeight, -width / 2);
             p2 = glm::vec3(-length / 2 + t0 * leftWallLength, wallHeight, -width / 2);
 
             color = shading(p0, normalLeftWall, light, material, camera);
-            glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+            glNormal3f(normalLeftWall.x, normalLeftWall.y, normalLeftWall.z);  // Define a normal
+            glColor3f(color.r, color.g, color.b);
             glVertex3f(p0.x, p0.y, p0.z);
 
             color = shading(p1, normalLeftWall, light, material, camera);
-            glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+            glNormal3f(normalLeftWall.x, normalLeftWall.y, normalLeftWall.z);  // Define a normal
+            glColor3f(color.r, color.g, color.b);
             glVertex3f(p1.x, p1.y, p1.z);
 
             color = shading(p2, normalLeftWall, light, material, camera);
-            glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+            glNormal3f(normalLeftWall.x, normalLeftWall.y, normalLeftWall.z);  // Define a normal
+            glColor3f(color.r, color.g, color.b);
             glVertex3f(p2.x, p2.y, p2.z);
         }
         glEnd();
@@ -169,24 +160,30 @@ void createStreet(
             glm::vec3 color1 = shading(point1, normalRightWall, light, material, camera);
             glm::vec3 color2 = shading(point2, normalRightWall, light, material, camera);
 
+            glNormal3f(normalRightWall.x, normalRightWall.y, normalRightWall.z);  // Define a normal
             glColor3f(color0.r * 0.6f, color0.g * 0.6f, color0.b * 0.6f);
             glVertex3f(point0.x, point0.y, point0.z);
 
+            glNormal3f(normalRightWall.x, normalRightWall.y, normalRightWall.z);  // Define a normal
             glColor3f(color1.r * 0.6f, color1.g * 0.6f, color1.b * 0.6f);
             glVertex3f(point1.x, point1.y, point1.z);
 
+            glNormal3f(normalRightWall.x, normalRightWall.y, normalRightWall.z);  // Define a normal
             glColor3f(color2.r * 0.6f, color2.g * 0.6f, color2.b * 0.6f);
             glVertex3f(point2.x, point2.y, point2.z);
 
             // Segundo triângulo da parede
             glm::vec3 color3 = shading(point3, normalRightWall, light, material, camera);
 
+            glNormal3f(normalRightWall.x, normalRightWall.y, normalRightWall.z);  // Define a normal
             glColor3f(color1.r * 0.6f, color1.g * 0.6f, color1.b * 0.6f);
             glVertex3f(point1.x, point1.y, point1.z);
 
+            glNormal3f(normalRightWall.x, normalRightWall.y, normalRightWall.z);  // Define a normal
             glColor3f(color2.r * 0.6f, color2.g * 0.6f, color2.b * 0.6f);
             glVertex3f(point2.x, point2.y, point2.z);
 
+            glNormal3f(normalRightWall.x, normalRightWall.y, normalRightWall.z);  // Define a normal
             glColor3f(color3.r * 0.6f, color3.g * 0.6f, color3.b * 0.6f);
             glVertex3f(point3.x, point3.y, point3.z);
         }

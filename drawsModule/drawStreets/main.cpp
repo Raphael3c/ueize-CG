@@ -2,10 +2,10 @@
 #include "../../objectsModule/createStreet/main.h"
 
 Material material = {
-    glm::vec3(0.4f, 0.4f, 0.4f),  // ambient
-    glm::vec3(0.5f, 0.5f, 0.5f),  // diffuse
-    glm::vec3(1.0f, 1.0f, 1.0f),  // specular
-    30.0f                         // shininess
+    glm::vec3(1.0f, 1.0f, 1.0f),  // ambient
+    glm::vec3(0.8f, 0.8f, 0.8f),  // diffuse
+    glm::vec3(0.6f, 0.6f, 0.6f),  // specular
+    10.0f                         // shininess
 };
 
 void drawStreets(
@@ -36,9 +36,9 @@ void drawStreets(
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, (streetWidth/2) + (streetLength/2)));
         glMultMatrixf(glm::value_ptr(model));
 
-        glm::vec3 normalFloor(-1.0f, 0.0f, 0.0f);
-        glm::vec3 normalLeftWall(0.0f, 0.0f, 0.0f);
-        glm::vec3 normalRightWall(-1.0f, 0.0f, 0.0f);
+        glm::vec3 normalFloor(0.0f, 1.0f, 0.0f);
+        glm::vec3 normalRightWall(0.0f, 0.0f, 1.0f);
+        glm::vec3 normalLeftWall(0.0f, 0.0f, -1.0f);
 
         createStreetWithWorldCoordinates(
             streetLength * 2, streetWidth, false, true, 1.0f, 1.0f, streetHeight, 
@@ -49,17 +49,6 @@ void drawStreets(
             
         model = glm::mat4(1.0f);    
     glPopMatrix();
-
-    glPointSize(15.0f);
-
-    // Definir a cor do ponto (por exemplo, amarelo para representar o Sol)
-    glColor3f(1.0f, 1.0f, 0.0f);
-    
-    // Desenhar o ponto na posição da origem visual da luz
-    glBegin(GL_POINTS);
-        glVertex3f(0.0f, 10.0f, 0.0f);
-    glEnd();
-
 
     // //Rua 1
     // glPushMatrix();
