@@ -14,8 +14,8 @@
 
 #include "../../common.h"
 
-void createStreet(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, int streetIndex, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints, const Light& light, const Light& light_spot, const Material& material, const Camera& camera, glm::vec3 normalFloor, glm::vec3 normalLeftWall, glm::vec3 normalRightWall, glm::mat4 model);
+void createStreet(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, int streetIndex, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints, const Light& light, const Light& light_spot, const Material& material, const Camera& camera, glm::vec3 normalFloor, glm::vec3 normalLeftWall, glm::vec3 normalRightWall, glm::mat4 model, unsigned int texId);
 
-void createStreetWithWorldCoordinates(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, glm::mat4 transformMatrix, int streetIndex, std::unordered_map<int, StreetPoints>& worldCoordinates, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints, const Light& light, const Light& light_spot, const Material& material, const Camera& camera, glm::vec3 normalFloor, glm::vec3 normalLeftWall, glm::vec3 normalRightWall);
+void createStreetWithWorldCoordinates(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, glm::mat4 transformMatrix, int streetIndex, std::unordered_map<int, StreetPoints>& worldCoordinates, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints, const Light& light, const Light& light_spot, const Material& material, const Camera& camera, glm::vec3 normalFloor, glm::vec3 normalLeftWall, glm::vec3 normalRightWall, unsigned int texId);
 
 #endif // CREATE_STREET_H

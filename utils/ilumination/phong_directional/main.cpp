@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <algorithm>  // Para std::max
+#include <algorithm>
 #include <GL/gl.h>
 
 glm::vec3 shading(const glm::vec3& point, const glm::vec3& normal, const Light& light, const Material& material, const Camera& camera) {
@@ -30,7 +30,7 @@ glm::vec3 shading_spot(const glm::vec3& point, const glm::vec3& normal, const Li
     
     float cutoffCos = glm::cos(glm::radians(cutoffAngle));
     
-    float smoothFalloff = glm::pow(glm::clamp((spotEffect - cutoffCos) / (1.0f - cutoffCos), 0.0f, 1.0f), 30.0f);  // Expoente 2 para suavização
+    float smoothFalloff = glm::pow(glm::clamp((spotEffect - cutoffCos) / (1.0f - cutoffCos), 0.0f, 1.0f), 2.0f);
 
     if (smoothFalloff > 0.0f) {
         glm::vec3 shadeDiffuse = light.diffuse * material.diffuse * glm::max(0.0f, glm::dot(normalVec, lightDir)) * smoothFalloff;

@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include "../../common.h"
 
-// Declaração da função
 void drawLineFollowingStreetTopology(const SelectedPoint& point1, const SelectedPoint& point2, std::unordered_map<int, std::vector<int>> streetConnections);
 
 #endif  // DRAW_LINE_FOLLOWING_STREET_TOPOLOGY_H

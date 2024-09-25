@@ -4,8 +4,8 @@
 Material materialRua = {
     glm::vec3(0.5f, 0.5f, 0.5f),  
     glm::vec3(0.6f, 0.6f, 0.6f),  
-    glm::vec3(0.3f, 0.3f, 0.3f), 
-    0.4f                 
+    glm::vec3(0.6f, 0.6f, 0.6f), 
+    4.0f                 
 };
 
 void drawStreets(
@@ -14,7 +14,9 @@ void drawStreets(
     std::vector<SelectedPoint> selectedPoints, 
     Camera camera,
     Light light,
-    Light light_spot
+    Light light_spot,
+    unsigned int texId1,
+    unsigned int texId2
 ) {
     float streetLength = 200.0f;  
     float streetWidth = 30.0f;   
@@ -41,7 +43,8 @@ void drawStreets(
             streetLength * 2, streetWidth, false, true, 1.0f, 1.0f, streetHeight, 
             model, streetIndex++, worldCoordinates, closestStreetIndex, 
             closestPointPercentage, selectedPoints, light, light_spot,
-            materialRua, camera, normalFloor, normalLeftWall, normalRightWall
+            materialRua, camera, normalFloor, normalLeftWall, normalRightWall,
+            texId1
         );
                 
         model = glm::mat4(1.0f);    
@@ -57,12 +60,12 @@ void drawStreets(
             streetHeight, model, streetIndex++, worldCoordinates, 
             closestStreetIndex, closestPointPercentage, 
             selectedPoints, light, light_spot, materialRua, camera,
-            normalFloor, normalLeftWall, normalRightWall
+            normalFloor, normalLeftWall, normalRightWall,
+            texId1
         );
         model = glm::mat4(1.0f); 
     glPopMatrix();
     
-    // //______________________________
 
     //Rua 2
     glPushMatrix();
@@ -72,7 +75,8 @@ void drawStreets(
             streetLength, streetWidth, true, true, 1.0f, 1.0f, 
             streetHeight, model, streetIndex++, worldCoordinates, closestStreetIndex, 
             closestPointPercentage, selectedPoints, light, light_spot, materialRua, camera,
-            normalFloor, normalLeftWall, normalRightWall
+            normalFloor, normalLeftWall, normalRightWall,
+            texId2
         );
         model = glm::mat4(1.0f); 
     glPopMatrix();
@@ -86,7 +90,8 @@ void drawStreets(
             streetLength, streetWidth, true, true, 1.0f, 1.0f, 
             streetHeight, model, streetIndex++, worldCoordinates, closestStreetIndex, 
             closestPointPercentage, selectedPoints, light, light_spot, materialRua, camera,
-            normalFloor, normalLeftWall, normalRightWall
+            normalFloor, normalLeftWall, normalRightWall,
+            texId2
         );
 
         model = glm::mat4(1.0f); 
@@ -102,7 +107,8 @@ void drawStreets(
             streetLength, streetWidth, true, true, 1.0f, 0.685f, 
             streetHeight, model, streetIndex++, worldCoordinates, closestStreetIndex, 
             closestPointPercentage, selectedPoints, light, light_spot, materialRua, camera,
-            normalFloor, normalLeftWall, normalRightWall
+            normalFloor, normalLeftWall, normalRightWall,
+            texId2
         );
         model = glm::mat4(1.0f);
     glPopMatrix();
@@ -119,7 +125,8 @@ void drawStreets(
             streetLength, streetWidth, false, true, 1.0f, 1.0f, streetHeight, model, 
             streetIndex++, worldCoordinates, closestStreetIndex, closestPointPercentage, 
             selectedPoints, light, light_spot, materialRua, camera,
-            normalFloor, normalLeftWall, normalRightWall
+            normalFloor, normalLeftWall, normalRightWall,
+            texId2
         );
 
         model = glm::mat4(1.0f);
@@ -133,7 +140,8 @@ void drawStreets(
             streetLength*0.675, streetWidth, true, true, 0.985f, 0.941f, 
             streetHeight, model, streetIndex++, worldCoordinates, closestStreetIndex, 
             closestPointPercentage, selectedPoints, light, light_spot, materialRua, camera,
-            normalFloor, normalLeftWall, normalRightWall
+            normalFloor, normalLeftWall, normalRightWall,
+            texId2
         );
         model = glm::mat4(1.0f);
     glPopMatrix();

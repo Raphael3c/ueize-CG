@@ -1,6 +1,7 @@
 #include "main.h"
 #include "../../utils/calculateWorldCoordinates/main.h"
 #include "../../utils/ilumination/phong_directional/main.h"
+#include <iostream>
 
 void createStreet(
     float length, 
@@ -22,8 +23,15 @@ void createStreet(
     glm::vec3 normalLeftWall,
     glm::vec3 normalRightWall,
 
-    glm::mat4 model
+    glm::mat4 model,
+
+    unsigned int texId
 ) {
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texId);
+
+    std::cout << texId << std::endl;
+
     glBegin(GL_TRIANGLES);
         int numSegments = 20;
         glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(model))); 
@@ -39,30 +47,33 @@ void createStreet(
         glm::vec3 p1 = glm::vec3(-length / 2 + t1 * length, 0.0f, -width / 2);
         glm::vec3 p2 = glm::vec3(-length / 2 + t0 * length, 0.0f, width / 2);
 
-        // Aplicando a matriz model
         p0 = glm::vec3(model * glm::vec4(p0, 1.0f));
         p1 = glm::vec3(model * glm::vec4(p1, 1.0f));
         p2 = glm::vec3(model * glm::vec4(p2, 1.0f));
 
         glm::vec3 color = shading(p0, normalFloor, light, material, camera);
-        glm::vec3 color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 40.0f);
+        glm::vec3 color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 35.0f);
         glm::vec3 finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glTexCoord2f(0.95f, 0.46f);
         glVertex3f(p0.x, p0.y, p0.z);
 
         color = shading(p1, normalFloor, light, material, camera);
-        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 40.0f);
+        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 35.0f);
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glTexCoord2f(0.0f, 0.0f);
+        // glTexCoord2f(1.0f, 0.0f);
         glVertex3f(p1.x, p1.y, p1.z);
 
         color = shading(p2, normalFloor, light, material, camera);
-        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 40.0f);
+        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 35.0f);
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glTexCoord2f(1.0f, 0.0f);
         glVertex3f(p2.x, p2.y, p2.z);
 
         // Triângulo 2 (Piso)
@@ -76,29 +87,30 @@ void createStreet(
         p2 = glm::vec3(model * glm::vec4(p2, 1.0f));
 
         color = shading(p0, normalFloor, light, material, camera);
-        color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 40.0f);
+        color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 35.0f);
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glTexCoord2f(0.0f, 1.0f);
         glVertex3f(p0.x, p0.y, p0.z);
 
         color = shading(p1, normalFloor, light, material, camera);
-        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 40.0f);
+        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 35.0f);
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
         glVertex3f(p1.x, p1.y, p1.z);
 
         color = shading(p2, normalFloor, light, material, camera);
-        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 40.0f);
+        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 35.0f);
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glTexCoord2f(1.0f, 1.0f);
         glVertex3f(p2.x, p2.y, p2.z);
     }
     glEnd();
 
-// Paredes (esquerda e direita)
     if (drawLeftWall) {
         float leftWallLength = length * leftWallLengthFactor;
         normalLeftWall = glm::normalize(normalMatrix * normalLeftWall);
@@ -113,53 +125,50 @@ void createStreet(
                 glm::vec3 p1 = glm::vec3(-length / 2 + t1 * leftWallLength, 0.0f, -width / 2);
                 glm::vec3 p2 = glm::vec3(-length / 2 + t0 * leftWallLength, wallHeight, -width / 2);
 
-                // Aplicando a matriz model
                 p0 = glm::vec3(model * glm::vec4(p0, 1.0f));
                 p1 = glm::vec3(model * glm::vec4(p1, 1.0f));
                 p2 = glm::vec3(model * glm::vec4(p2, 1.0f));
 
                 glm::vec3 color = shading(p0, normalLeftWall, light, material, camera);
-                glm::vec3 color_spot = shading_spot(p0, normalLeftWall, light_spot, material, camera, 40.0f);
+                glm::vec3 color_spot = shading_spot(p0, normalLeftWall, light_spot, material, camera, 35.0f);
                 glm::vec3 finalColor = color + color_spot;
                 glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);
                 glVertex3f(p0.x, p0.y, p0.z);
 
                 color = shading(p1, normalLeftWall, light, material, camera);
-                color_spot = shading_spot(p1, normalLeftWall, light_spot, material, camera, 40.0f);
+                color_spot = shading_spot(p1, normalLeftWall, light_spot, material, camera, 35.0f);
                 finalColor = color + color_spot;
                 glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);
                 glVertex3f(p1.x, p1.y, p1.z);
 
                 color = shading(p2, normalLeftWall, light, material, camera);
-                color_spot = shading_spot(p2, normalLeftWall, light_spot, material, camera, 40.0f);
+                color_spot = shading_spot(p2, normalLeftWall, light_spot, material, camera, 35.0f);
                 finalColor = color + color_spot;
                 glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);
                 glVertex3f(p2.x, p2.y, p2.z);
 
-                // Triângulo 2 (Parede Esquerda)
                 p0 = glm::vec3(-length / 2 + t1 * leftWallLength, 0.0f, -width / 2);
                 p1 = glm::vec3(-length / 2 + t1 * leftWallLength, wallHeight, -width / 2);
                 p2 = glm::vec3(-length / 2 + t0 * leftWallLength, wallHeight, -width / 2);
 
-                // Aplicando a matriz model
                 p0 = glm::vec3(model * glm::vec4(p0, 1.0f));
                 p1 = glm::vec3(model * glm::vec4(p1, 1.0f));
                 p2 = glm::vec3(model * glm::vec4(p2, 1.0f));
 
                 color = shading(p0, normalLeftWall, light, material, camera);
-                color_spot = shading_spot(p0, normalLeftWall, light_spot, material, camera, 40.0f);
+                color_spot = shading_spot(p0, normalLeftWall, light_spot, material, camera, 35.0f);
                 finalColor = color + color_spot;
                 glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);
                 glVertex3f(p0.x, p0.y, p0.z);
 
                 color = shading(p1, normalLeftWall, light, material, camera);
-                color_spot = shading_spot(p1, normalLeftWall, light_spot, material, camera, 40.0f);
+                color_spot = shading_spot(p1, normalLeftWall, light_spot, material, camera, 35.0f);
                 finalColor = color + color_spot;
                 glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);
                 glVertex3f(p1.x, p1.y, p1.z);
 
                 color = shading(p2, normalLeftWall, light, material, camera);
-                color_spot = shading_spot(p2, normalLeftWall, light_spot, material, camera, 40.0f);
+                color_spot = shading_spot(p2, normalLeftWall, light_spot, material, camera, 35.0f);
                 finalColor = color + color_spot;
                 glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);
                 glVertex3f(p2.x, p2.y, p2.z);
@@ -183,7 +192,6 @@ void createStreet(
             glm::vec3 point2 = glm::vec3(-length / 2 + t0 * rightWallLength, wallHeight, width / 2);
             glm::vec3 point3 = glm::vec3(-length / 2 + t1 * rightWallLength, wallHeight, width / 2);
 
-            // Aplicando a matriz model
             point0 = glm::vec3(model * glm::vec4(point0, 1.0f));
             point1 = glm::vec3(model * glm::vec4(point1, 1.0f));
             point2 = glm::vec3(model * glm::vec4(point2, 1.0f));
@@ -194,10 +202,10 @@ void createStreet(
             glm::vec3 color2 = shading(point2, normalRightWall, light, material, camera);
             glm::vec3 color3 = shading(point3, normalRightWall, light, material, camera);
 
-            glm::vec3 color0_spot = shading_spot(point0, normalRightWall, light_spot, material, camera, 40.0f);
-            glm::vec3 color1_spot = shading_spot(point1, normalRightWall, light_spot, material, camera, 40.0f);
-            glm::vec3 color2_spot= shading_spot(point2, normalRightWall, light_spot, material, camera, 40.0f);
-            glm::vec3 color3_spot= shading_spot(point3, normalRightWall, light_spot, material, camera, 40.0f);
+            glm::vec3 color0_spot = shading_spot(point0, normalRightWall, light_spot, material, camera, 35.0f);
+            glm::vec3 color1_spot = shading_spot(point1, normalRightWall, light_spot, material, camera, 35.0f);
+            glm::vec3 color2_spot= shading_spot(point2, normalRightWall, light_spot, material, camera, 35.0f);
+            glm::vec3 color3_spot= shading_spot(point3, normalRightWall, light_spot, material, camera, 35.0f);
 
             glm::vec3 finalColor = color0 + color0_spot;
             glColor3f(0.1f+finalColor.r, 0.1f+finalColor.g, 0.1f+finalColor.b);
@@ -245,7 +253,6 @@ void createStreet(
         float stepPosition = steps[i];
         bool isSelected = false;
 
-        // Verificar se o ponto é um dos dois selecionados
         if(selectedPoints.size()){
             for (int j = 0; j < 2; ++j) {
                 if (selectedPoints[j].streetIndex == streetIndex && selectedPoints[j].pointPercentage == stepPosition) {
@@ -270,11 +277,13 @@ void createStreet(
         glBegin(GL_POINTS);
             glVertex3f(-length / 2 + step * i, pointHeight, 0.0f);
         glEnd();
+
+        glDisable(GL_TEXTURE_2D);
     }
 }
 
-void createStreetWithWorldCoordinates(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, glm::mat4 transformMatrix, int streetIndex, std::unordered_map<int, StreetPoints>& worldCoordinates, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints, const Light& light, const Light& light_spot, const Material& material, const Camera& camera, glm::vec3 normalFloor, glm::vec3 normalLeftWall, glm::vec3 normalRightWall) {
-    createStreet(length, width, drawLeftWall, drawRightWall, leftWallLengthFactor, rightWallLengthFactor, wallHeight, streetIndex, closestStreetIndex, closestPointPercentage, selectedPoints, light, light_spot, material, camera, normalFloor, normalLeftWall, normalRightWall, transformMatrix);
+void createStreetWithWorldCoordinates(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, glm::mat4 transformMatrix, int streetIndex, std::unordered_map<int, StreetPoints>& worldCoordinates, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints, const Light& light, const Light& light_spot, const Material& material, const Camera& camera, glm::vec3 normalFloor, glm::vec3 normalLeftWall, glm::vec3 normalRightWall, unsigned int texId) {
+    createStreet(length, width, drawLeftWall, drawRightWall, leftWallLengthFactor, rightWallLengthFactor, wallHeight, streetIndex, closestStreetIndex, closestPointPercentage, selectedPoints, light, light_spot, material, camera, normalFloor, normalLeftWall, normalRightWall, transformMatrix, texId);
 
     calculateWorldCoordinates(streetIndex, transformMatrix, length, worldCoordinates);
 }
