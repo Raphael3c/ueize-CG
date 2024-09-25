@@ -14,6 +14,6 @@
 
 #include "../../common.h"
 
-void drawStreets(std::unordered_map<int, StreetPoints>& worldCoordinates, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints, Camera camera);
+void drawStreets(std::unordered_map<int, StreetPoints>& worldCoordinates, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints, Camera camera, Light light, Light light_spot);
 
 #endif // MAIN_H

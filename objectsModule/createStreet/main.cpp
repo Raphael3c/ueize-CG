@@ -3,45 +3,193 @@
 #include "../../utils/ilumination/phong_directional/main.h"
 
 // Função que desenha a rua e aplica iluminação Phong nos vértices
-void createStreet(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, int streetIndex, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints, const Light& light, const Material& material, const Camera& camera) {
-    glm::vec3 normal(0.0f, 1.0f, 0.0f);  // Normal constante para superfícies planas
+void createStreet(
+    float length, 
+    float width, 
+    bool drawLeftWall, 
+    bool drawRightWall, 
+    float leftWallLengthFactor, 
+    float rightWallLengthFactor, 
+    float wallHeight, 
+    int streetIndex, 
+    int closestStreetIndex, 
+    float closestPointPercentage, 
+    std::vector<SelectedPoint> selectedPoints, 
+    const Light& light, 
+    const Light& light_spot, 
+    const Material& material, 
+    const Camera& camera,
+    glm::vec3 normalFloor,
+    glm::vec3 normalLeftWall,
+    glm::vec3 normalRightWall
+) {
+    glBegin(GL_TRIANGLES);
+    // Subdividindo a rua em múltiplos triângulos
+    int numSegments = 300;  // Definindo 20 triângulos, ou seja, 10 subdivisões
 
-    glBegin(GL_QUADS);
-        // Aplicar a iluminação Phong em cada vértice
-        for (int i = 0; i < 4; ++i) {
-            glm::vec3 pointPosition;
-            switch (i) {
-                case 0: pointPosition = glm::vec3(-length / 2, 0.0f, -width / 2); break;
-                case 1: pointPosition = glm::vec3(length / 2, 0.0f, -width / 2); break;
-                case 2: pointPosition = glm::vec3(length / 2, 0.0f, width / 2); break;
-                case 3: pointPosition = glm::vec3(-length / 2, 0.0f, width / 2); break;
-            }
+    for (int i = 0; i < numSegments; ++i) {
+        float t0 = (float)i / numSegments;
+        float t1 = (float)(i + 1) / numSegments;
 
-            // Aplicar a cor calculada
-            glColor3f(0.3f, 0.3f, 0.3f);
-            glVertex3f(pointPosition.x, pointPosition.y, pointPosition.z);
-        }
+        // Triângulo 1
+        glm::vec3 p0 = glm::vec3(-length / 2 + t0 * length, 0.0f, -width / 2);
+        glm::vec3 p1 = glm::vec3(-length / 2 + t1 * length, 0.0f, -width / 2);
+        glm::vec3 p2 = glm::vec3(-length / 2 + t0 * length, 0.0f, width / 2);
+
+        glm::vec3 color = shading(p0, normalFloor, light, material, camera);
+        glm::vec3 color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 30.0f);
+
+        // Misturar as duas cores somando as contribuições
+        glm::vec3 finalColor = color + color_spot;
+
+        // Aplicar a cor calculada no vértice
+        glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glVertex3f(p0.x, p0.y, p0.z);
+
+        color = shading(p1, normalFloor, light, material, camera);
+        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 30.0f);
+
+        // Misturar as duas cores somando as contribuições
+        finalColor = color + color_spot;
+
+        // Aplicar a cor calculada no vértice
+        glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glVertex3f(p1.x, p1.y, p1.z);
+
+        color = shading(p2, normalFloor, light, material, camera);
+        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 30.0f);
+
+        // Misturar as duas cores somando as contribuições
+        finalColor = color + color_spot;
+
+        // Aplicar a cor calculada no vértice
+        glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glVertex3f(p2.x, p2.y, p2.z);
+
+        // Triângulo 2
+        p0 = glm::vec3(-length / 2 + t1 * length, 0.0f, -width / 2);
+        p1 = glm::vec3(-length / 2 + t1 * length, 0.0f, width / 2);
+        p2 = glm::vec3(-length / 2 + t0 * length, 0.0f, width / 2);
+
+        color = shading(p0, normalFloor, light, material, camera);
+        color_spot = shading_spot(p0, normalFloor, light_spot, material, camera, 30.0f);
+
+        // Misturar as duas cores somando as contribuições
+        finalColor = color + color_spot;
+
+        // Aplicar a cor calculada no vértice
+        glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glVertex3f(p0.x, p0.y, p0.z);
+
+        color = shading(p1, normalFloor, light, material, camera);
+        color_spot = shading_spot(p1, normalFloor, light_spot, material, camera, 30.0f);
+
+        // Misturar as duas cores somando as contribuições
+        finalColor = color + color_spot;
+
+        // Aplicar a cor calculada no vértice
+        glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glVertex3f(p1.x, p1.y, p1.z);
+
+        color = shading(p2, normalFloor, light, material, camera);
+        color_spot = shading_spot(p2, normalFloor, light_spot, material, camera, 30.0f);
+
+        // Misturar as duas cores somando as contribuições
+        finalColor = color + color_spot;
+
+        // Aplicar a cor calculada no vértice
+        glColor3f(finalColor.r, finalColor.g, finalColor.b);
+        glVertex3f(p2.x, p2.y, p2.z);
+    }
     glEnd();
 
+
+    // Subdividindo a parede esquerda em múltiplos triângulos
     if (drawLeftWall) {
-        glColor3f(0.6f, 0.6f, 0.6f);
         float leftWallLength = length * leftWallLengthFactor;
-        glBegin(GL_QUADS);
-            glVertex3f(-length / 2, 0.0f, -width / 2);
-            glVertex3f(-length / 2 + leftWallLength, 0.0f, -width / 2);
-            glVertex3f(-length / 2 + leftWallLength, wallHeight, -width / 2);
-            glVertex3f(-length / 2, wallHeight, -width / 2);
+
+        glBegin(GL_TRIANGLES);
+        for (int i = 0; i < numSegments; ++i) {
+            float t0 = (float)i / numSegments;
+            float t1 = (float)(i + 1) / numSegments;
+
+            // Triângulo 1
+            glm::vec3 p0 = glm::vec3(-length / 2 + t0 * leftWallLength, 0.0f, -width / 2);
+            glm::vec3 p1 = glm::vec3(-length / 2 + t1 * leftWallLength, 0.0f, -width / 2);
+            glm::vec3 p2 = glm::vec3(-length / 2 + t0 * leftWallLength, wallHeight, -width / 2);
+
+            glm::vec3 color = shading(p0, normalLeftWall, light, material, camera);
+            glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+            glVertex3f(p0.x, p0.y, p0.z);
+
+            color = shading(p1, normalLeftWall, light, material, camera);
+            glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+            glVertex3f(p1.x, p1.y, p1.z);
+
+            color = shading(p2, normalLeftWall, light, material, camera);
+            glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+            glVertex3f(p2.x, p2.y, p2.z);
+
+            // Triângulo 2
+            p0 = glm::vec3(-length / 2 + t1 * leftWallLength, 0.0f, -width / 2);
+            p1 = glm::vec3(-length / 2 + t1 * leftWallLength, wallHeight, -width / 2);
+            p2 = glm::vec3(-length / 2 + t0 * leftWallLength, wallHeight, -width / 2);
+
+            color = shading(p0, normalLeftWall, light, material, camera);
+            glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+            glVertex3f(p0.x, p0.y, p0.z);
+
+            color = shading(p1, normalLeftWall, light, material, camera);
+            glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+            glVertex3f(p1.x, p1.y, p1.z);
+
+            color = shading(p2, normalLeftWall, light, material, camera);
+            glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+            glVertex3f(p2.x, p2.y, p2.z);
+        }
         glEnd();
     }
 
     if (drawRightWall) {
-        glColor3f(0.6f, 0.6f, 0.6f);
         float rightWallLength = length * rightWallLengthFactor;
-        glBegin(GL_QUADS);
-            glVertex3f(-length / 2, 0.0f, width / 2);
-            glVertex3f(-length / 2 + rightWallLength, 0.0f, width / 2);
-            glVertex3f(-length / 2 + rightWallLength, wallHeight, width / 2);
-            glVertex3f(-length / 2, wallHeight, width / 2);
+        int numTriangles = 20;  // Número de triângulos para formar a parede
+
+        glBegin(GL_TRIANGLES);
+        for (int i = 0; i < numTriangles; ++i) {
+            float t0 = (float)i / numTriangles;
+            float t1 = (float)(i + 1) / numTriangles;
+
+            glm::vec3 point0 = glm::vec3(-length / 2 + t0 * rightWallLength, 0.0f, width / 2);
+            glm::vec3 point1 = glm::vec3(-length / 2 + t1 * rightWallLength, 0.0f, width / 2);
+            glm::vec3 point2 = glm::vec3(-length / 2 + t0 * rightWallLength, wallHeight, width / 2);
+            glm::vec3 point3 = glm::vec3(-length / 2 + t1 * rightWallLength, wallHeight, width / 2);
+
+            // Primeiro triângulo da parede
+            glm::vec3 color0 = shading(point0, normalRightWall, light, material, camera);
+            glm::vec3 color1 = shading(point1, normalRightWall, light, material, camera);
+            glm::vec3 color2 = shading(point2, normalRightWall, light, material, camera);
+
+            glColor3f(color0.r * 0.6f, color0.g * 0.6f, color0.b * 0.6f);
+            glVertex3f(point0.x, point0.y, point0.z);
+
+            glColor3f(color1.r * 0.6f, color1.g * 0.6f, color1.b * 0.6f);
+            glVertex3f(point1.x, point1.y, point1.z);
+
+            glColor3f(color2.r * 0.6f, color2.g * 0.6f, color2.b * 0.6f);
+            glVertex3f(point2.x, point2.y, point2.z);
+
+            // Segundo triângulo da parede
+            glm::vec3 color3 = shading(point3, normalRightWall, light, material, camera);
+
+            glColor3f(color1.r * 0.6f, color1.g * 0.6f, color1.b * 0.6f);
+            glVertex3f(point1.x, point1.y, point1.z);
+
+            glColor3f(color2.r * 0.6f, color2.g * 0.6f, color2.b * 0.6f);
+            glVertex3f(point2.x, point2.y, point2.z);
+
+            glColor3f(color3.r * 0.6f, color3.g * 0.6f, color3.b * 0.6f);
+            glVertex3f(point3.x, point3.y, point3.z);
+        }
         glEnd();
     }
 
@@ -90,9 +238,9 @@ void createStreet(float length, float width, bool drawLeftWall, bool drawRightWa
 }
 
 // Função que desenha a rua com suas coordenadas de mundo e aplica iluminação
-void createStreetWithWorldCoordinates(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, glm::mat4 transformMatrix, int streetIndex, std::unordered_map<int, StreetPoints>& worldCoordinates, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints, const Light& light, const Material& material, const Camera& camera) {
+void createStreetWithWorldCoordinates(float length, float width, bool drawLeftWall, bool drawRightWall, float leftWallLengthFactor, float rightWallLengthFactor, float wallHeight, glm::mat4 transformMatrix, int streetIndex, std::unordered_map<int, StreetPoints>& worldCoordinates, int closestStreetIndex, float closestPointPercentage, std::vector<SelectedPoint> selectedPoints, const Light& light, const Light& light_spot, const Material& material, const Camera& camera, glm::vec3 normalFloor, glm::vec3 normalLeftWall, glm::vec3 normalRightWall) {
     // Desenhar a rua com iluminação Phong
-    createStreet(length, width, drawLeftWall, drawRightWall, leftWallLengthFactor, rightWallLengthFactor, wallHeight, streetIndex, closestStreetIndex, closestPointPercentage, selectedPoints, light, material, camera);
+    createStreet(length, width, drawLeftWall, drawRightWall, leftWallLengthFactor, rightWallLengthFactor, wallHeight, streetIndex, closestStreetIndex, closestPointPercentage, selectedPoints, light, light_spot, material, camera, normalFloor, normalLeftWall, normalRightWall);
 
     // Calcular coordenadas de mundo para a rua
     calculateWorldCoordinates(streetIndex, transformMatrix, length, worldCoordinates);

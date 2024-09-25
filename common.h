@@ -19,6 +19,7 @@ struct Light {
     glm::vec3 diffuse;
     glm::vec3 specular;
     glm::vec3 direction;  // Para luz direcional
+    glm::vec3 position;
 };
 
 struct Material {

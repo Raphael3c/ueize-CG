@@ -25,3 +25,25 @@ glm::vec3 shading(const glm::vec3& point, const glm::vec3& normal, const Light& 
     // Somar as componentes: ambiente, difusa e especular
     return shadeAmbient + shadeDiffuse + shadeSpecular;
 }
+
+
+// Função que implementa a iluminação Phong com luz direcional
+glm::vec3 shading_spot(const glm::vec3& point, const glm::vec3& normal, const Light& light, const Material& material, const Camera& camera, float cutoffAngle) {
+    // Lógica da iluminação spot
+    glm::vec3 shadeAmbient = light.ambient * material.ambient;
+    glm::vec3 lightDir = glm::normalize(light.position - point);
+    glm::vec3 normalVec = glm::normalize(normal);
+    
+    float spotEffect = glm::dot(glm::normalize(light.direction), -lightDir);
+    
+    if (spotEffect > glm::cos(glm::radians(cutoffAngle))) {
+        glm::vec3 shadeDiffuse = light.diffuse * material.diffuse * glm::max(0.0f, glm::dot(normalVec, lightDir));
+        glm::vec3 viewDir = glm::normalize(camera.position - point);
+        glm::vec3 reflectDir = glm::reflect(-lightDir, normalVec);
+        glm::vec3 shadeSpecular = light.specular * material.specular * glm::pow(glm::max(0.0f, glm::dot(viewDir, reflectDir)), material.shininess);
+        
+        return shadeAmbient + shadeDiffuse + shadeSpecular;
+    }
+
+    return shadeAmbient;
+}
