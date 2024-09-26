@@ -56,7 +56,10 @@ void createStreet(
         glm::vec3 finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
-        glTexCoord2f(0.95f, 0.46f);
+        if(i%8 == 0 && (i+1)%8 == 0)
+            glTexCoord2f(0.95f, 0.46f);
+        else
+            glTexCoord2f(0.29f,2.30f);
         glVertex3f(p0.x, p0.y, p0.z);
 
         color = shading(p1, normalFloor, light, material, camera);
@@ -64,8 +67,13 @@ void createStreet(
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
-        glTexCoord2f(0.0f, 0.0f);
+        // glTexCoord2f(0.0f, 0.0f);
         // glTexCoord2f(1.0f, 0.0f);
+        if(i%8 == 0 && (i+1)%8 == 0)
+            glTexCoord2f(1.0f, 1.0f);
+            // glTexCoord2f(0.95f, 0.46f);
+        else
+            glTexCoord2f(1.35f, 3.36f);
         glVertex3f(p1.x, p1.y, p1.z);
 
         color = shading(p2, normalFloor, light, material, camera);
@@ -73,7 +81,13 @@ void createStreet(
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
-        glTexCoord2f(1.0f, 0.0f);
+        // glTexCoord2f(1.0f, 1.0f);
+        
+        // glTexCoord2f(1.0f, 0.0f);
+        if(i%8 == 0 && (i+1)%8 == 0)
+            glTexCoord2f(0.33f, 2.35f);
+        else
+            glTexCoord2f(0.33f,3.05f);
         glVertex3f(p2.x, p2.y, p2.z);
 
         // Triângulo 2 (Piso)
@@ -91,7 +105,9 @@ void createStreet(
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
-        glTexCoord2f(0.0f, 1.0f);
+        // glTexCoord2f(0.0f, 1.0f);
+        // glTexCoord2f(3.36f,1.35f); posição interessante
+        glTexCoord2f(0.33f,1.35f);
         glVertex3f(p0.x, p0.y, p0.z);
 
         color = shading(p1, normalFloor, light, material, camera);
@@ -106,7 +122,7 @@ void createStreet(
         finalColor = color + color_spot;
 
         glColor3f(finalColor.r, finalColor.g, finalColor.b);
-        glTexCoord2f(1.0f, 1.0f);
+        glTexCoord2f(1.56f, 2.33f);
         glVertex3f(p2.x, p2.y, p2.z);
     }
     glEnd();
